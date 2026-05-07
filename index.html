@@ -525,6 +525,11 @@
     const CONFIG = {
       RPC_URL:        'https://ethereum-sepolia-rpc.publicnode.com',
       SEARCH_ADDRESS: '0x6Be94D2A64a41b4Bacf278f55c640eBEc86A2Ace',
+      HIDDEN_CONTRACTS: [
+        // Add contract addresses here to hide them from the UI
+        // '0xABC...',
+        // '0xDEF...',
+      ],
     };
 
     const SEARCH_ABI = [
@@ -578,6 +583,13 @@
           { internalType: 'uint256', name: 'currentPart', type: 'uint256' },
           { internalType: 'string',  name: 'description', type: 'string'  },
         ],
+        stateMutability: 'view',
+        type: 'function',
+      },
+      {
+        inputs: [],
+        name: 'getRelatedContracts',
+        outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
         stateMutability: 'view',
         type: 'function',
       },
@@ -715,8 +727,13 @@
           })
         );
 
+        const hidden = new Set(
+          CONFIG.HIDDEN_CONTRACTS.map(a => a.toLowerCase())
+        );
+
         contracts = results
           .filter(r => r.status === 'fulfilled')
+          .filter(r => !hidden.has(r.value.address.toLowerCase()))
           .map(r => r.value);
 
         grid.innerHTML = contracts.map((c, i) => cardHTML(c, i)).join('');
@@ -760,14 +777,44 @@
         </div>`;
     }
 
+    async function fetchContractData(address) {
+      const dc = new web3.eth.Contract(DATA_ABI, address);
+      const count = Number(await dc.methods.getDataCount().call());
+      let hex = '';
+      for (let j = 0; j < count; j++) {
+        const chunk = await dc.methods.getData(j).call();
+        hex += chunk.replace(/^0x/, '');
+      }
+      return hex;
+    }
+
+    async function buildOrderedAddresses(primaryAddress, totalParts, currentPart) {
+      if (totalParts === 1) return [primaryAddress];
+
+      const dc = new web3.eth.Contract(DATA_ABI, primaryAddress);
+      const related = await dc.methods.getRelatedContracts().call();
+
+      const ordered = new Array(totalParts).fill(null);
+      ordered[currentPart - 1] = primaryAddress;
+
+      for (const addr of related) {
+        const rc = new web3.eth.Contract(DATA_ABI, addr);
+        const m = await rc.methods.getMetadata().call();
+        const part = Number(m[2] ?? m.currentPart);
+        ordered[part - 1] = addr;
+      }
+
+      return ordered;
+    }
+
     async function handleRetrieve(i) {
-      const c       = contracts[i];
-      const btn     = document.getElementById(`btn-${i}`);
-      const viewer  = document.getElementById(`viewer-${i}`);
-      const content = document.getElementById(`content-${i}`);
-      const actions = document.getElementById(`actions-${i}`);
+      const c        = contracts[i];
+      const btn      = document.getElementById(`btn-${i}`);
+      const viewer   = document.getElementById(`viewer-${i}`);
+      const content  = document.getElementById(`content-${i}`);
+      const actions  = document.getElementById(`actions-${i}`);
       const progress = document.getElementById(`progress-${i}`);
-      const status  = document.getElementById(`status-${i}`);
+      const status   = document.getElementById(`status-${i}`);
 
       if (viewer.classList.contains('open')) {
         viewer.classList.remove('open');
@@ -784,17 +831,20 @@
       status.textContent = 'Connecting…';
 
       try {
-        const dc    = new web3.eth.Contract(DATA_ABI, c.address);
-        const count = Number(await dc.methods.getDataCount().call());
+        const totalParts  = c.totalParts;
+        const currentPart = c.currentPart;
 
-        status.textContent = `Fetching ${count} chunk${count !== 1 ? 's' : ''}…`;
+        status.textContent = totalParts > 1
+          ? `Resolving ${totalParts}-part content…`
+          : 'Fetching…';
+
+        const ordered = await buildOrderedAddresses(c.address, totalParts, currentPart);
 
         let hex = '';
-        for (let j = 0; j < count; j++) {
-          const chunk = await dc.methods.getData(j).call();
-          hex += chunk.replace(/^0x/, '');
-          progress.style.width = `${((j + 1) / count) * 100}%`;
-          status.textContent = `Chunk ${j + 1} / ${count}`;
+        for (let p = 0; p < ordered.length; p++) {
+          status.textContent = `Contract ${p + 1} / ${ordered.length}…`;
+          hex += await fetchContractData(ordered[p]);
+          progress.style.width = `${((p + 1) / ordered.length) * 100}%`;
         }
 
         status.textContent = '';
