@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DarkChain — On-Chain Content Retrieval</title>
+  <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:            #080b0f;
+      --surface:       #0d1117;
+      --surface-2:     #161b22;
+      --border:        #21262d;
+      --border-hover:  #30363d;
+      --accent:        #00ff88;
+      --accent-dim:    rgba(0,255,136,0.08);
+      --accent-border: rgba(0,255,136,0.25);
+      --text:          #e6edf3;
+      --text-muted:    #7d8590;
+      --text-dim:      #484f58;
+      --red:           #ff6b6b;
+      --yellow:        #ffd93d;
+      --blue:          #6cb6ff;
+      --purple:        #d2a8ff;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,255,136,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,136,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      padding: 40px 0 32px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2.2rem;
+      letter-spacing: -0.03em;
+      color: var(--accent);
+      text-shadow: 0 0 48px rgba(0,255,136,0.25);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .logo span { color: var(--text-muted); }
+
+    .header-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      line-height: 1.7;
+    }
+
+    .header-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 11px;
+      border-radius: 4px;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .badge-testnet {
+      background: rgba(255,211,61,0.08);
+      border: 1px solid rgba(255,211,61,0.25);
+      color: var(--yellow);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: blink 2s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.25; }
+    }
+
+    .stats-bar {
+      display: flex;
+      gap: 0;
+      margin-bottom: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .stat {
+      flex: 1;
+      padding: 14px 20px;
+      border-right: 1px solid var(--border);
+    }
+
+    .stat:last-child { border-right: none; }
+
+    .stat-label {
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: 0.82rem;
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .stat-value.pending { color: var(--text-dim); }
+    .stat-value.accent  { color: var(--accent); }
+
+    .section-label {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 16px;
+    }
+
+    .contracts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
+      gap: 14px;
+      margin-bottom: 64px;
+    }
+
+    .contract-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .contract-card:hover {
+      border-color: var(--accent-border);
+      box-shadow: 0 0 24px rgba(0,255,136,0.04);
+    }
+
+    .card-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mime-badge {
+      font-size: 0.58rem;
+      padding: 2px 8px;
+      border-radius: 3px;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .mime-text    { background: rgba(108,182,255,0.08); border: 1px solid rgba(108,182,255,0.25); color: var(--blue); }
+    .mime-image   { background: rgba(210,168,255,0.08); border: 1px solid rgba(210,168,255,0.25); color: var(--purple); }
+    .mime-json    { background: rgba(255,211,61,0.08);  border: 1px solid rgba(255,211,61,0.25);  color: var(--yellow); }
+    .mime-default { background: var(--accent-dim);      border: 1px solid var(--accent-border);   color: var(--accent); }
+
+    .card-body {
+      padding: 14px 18px;
+    }
+
+    .card-address {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-bottom: 14px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .card-address .addr-label { color: var(--text-muted); margin-right: 4px; }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .card-parts {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+    }
+
+    .retrieve-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      border-radius: 4px;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+    }
+
+    .retrieve-btn:hover:not(:disabled) {
+      background: rgba(0,255,136,0.15);
+      box-shadow: 0 0 14px rgba(0,255,136,0.15);
+    }
+
+    .retrieve-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .content-viewer {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 16px 18px;
+    }
+
+    .content-viewer.open { display: block; }
+
+    .progress-bar {
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 1px;
+      width: 0%;
+      transition: width 0.25s ease;
+      box-shadow: 0 0 8px rgba(0,255,136,0.5);
+    }
+
+    .content-status {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+    }
+
+    .content-text {
+      font-size: 0.75rem;
+      line-height: 1.7;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: var(--surface-2);
+      padding: 12px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .content-image {
+      max-width: 100%;
+      max-height: 360px;
+      border-radius: 4px;
+      display: block;
+      border: 1px solid var(--border);
+    }
+
+    .content-actions {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      background: transparent;
+      border: 1px solid var(--border-hover);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .action-btn:hover {
+      border-color: var(--text-muted);
+      color: var(--text);
+    }
+
+    .size-label {
+      margin-left: auto;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+    }
+
+    .error-box {
+      font-size: 0.72rem;
+      color: var(--red);
+      padding: 10px 14px;
+      background: rgba(255,107,107,0.05);
+      border: 1px solid rgba(255,107,107,0.2);
+      border-radius: 4px;
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s ease-in-out infinite;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .skeleton-card { height: 148px; }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 72px 24px;
+      text-align: center;
+    }
+
+    .empty-state-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .empty-state-desc {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0 32px;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .footer-text {
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      line-height: 1.8;
+    }
+
+    .footer-text a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer-text a:hover { text-decoration: underline; }
+
+    .footer-rpc {
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      text-align: right;
+      line-height: 1.8;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+    @media (max-width: 640px) {
+      .header-inner { flex-direction: column; }
+      .header-right { align-items: flex-start; }
+      .stats-bar { flex-wrap: wrap; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); flex-basis: 45%; }
+      .stat:last-child { border-bottom: none; }
+      .footer-inner { flex-direction: column; }
+      .footer-rpc { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-inner">
+        <div>
+          <div class="logo">Dark<span>Chain</span></div>
+          <p class="header-desc">
+            A proof-of-concept demonstrating permanent, censorship-resistant content storage on Ethereum's state trie.
+            Data is retrieved directly from deployed smart contracts via JSON-RPC — no IPFS, no centralized servers, no takedowns.
+          </p>
+        </div>
+        <div class="header-right">
+          <div class="badge badge-testnet">
+            <span class="badge-dot"></span>
+            Sepolia Testnet
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="stats-bar">
+      <div class="stat">
+        <div class="stat-label">Registered Contracts</div>
+        <div class="stat-value accent pending" id="stat-count">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Network</div>
+        <div class="stat-value">Ethereum Sepolia</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Retrieval Method</div>
+        <div class="stat-value">JSON-RPC</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Storage Layer</div>
+        <div class="stat-value">State Trie</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Interface</div>
+        <div class="stat-value">Read-Only</div>
+      </div>
+    </div>
+
+    <div class="section-label">Registered On-Chain Content</div>
+
+    <div class="contracts-grid" id="contracts-grid">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+
+    <footer>
+      <div class="footer-inner">
+        <div class="footer-text">
+          DarkChain · Security research by <a href="https://linkedin.com/in/luke-beard-924501246" target="_blank">Luke Beard</a><br>
+          Rowan University · ACSUS Laboratory · Submitted to IEEE PST 2026<br>
+          Smart contract storage &amp; retrieval proof of concept
+        </div>
+        <div class="footer-rpc">
+          RPC: ethereum-sepolia-rpc.publicnode.com<br>
+          Chain ID: 11155111 (Sepolia)<br>
+          Registry: <span id="footer-registry">—</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const CONFIG = {
+      RPC_URL:        'https://ethereum-sepolia-rpc.publicnode.com',
+      SEARCH_ADDRESS: '0x6Be94D2A64a41b4Bacf278f55c640eBEc86A2Ace',
+    };
+
+    const SEARCH_ABI = [
+      {
+        inputs: [],
+        name: 'getAllTagContracts',
+        outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
+        stateMutability: 'view',
+        type: 'function',
+      },
+    ];
+
+    const TAG_ABI = [
+      {
+        inputs: [],
+        name: 'getAllDataContracts',
+        outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
+        stateMutability: 'view',
+        type: 'function',
+      },
+      {
+        inputs: [],
+        name: 'getTagName',
+        outputs: [{ internalType: 'string', name: '', type: 'string' }],
+        stateMutability: 'view',
+        type: 'function',
+      },
+    ];
+
+    const DATA_ABI = [
+      {
+        inputs: [{ internalType: 'uint256', name: '_index', type: 'uint256' }],
+        name: 'getData',
+        outputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
+        stateMutability: 'view',
+        type: 'function',
+      },
+      {
+        inputs: [],
+        name: 'getDataCount',
+        outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+        stateMutability: 'view',
+        type: 'function',
+      },
+      {
+        inputs: [],
+        name: 'getMetadata',
+        outputs: [
+          { internalType: 'string',  name: 'mimeType',    type: 'string'  },
+          { internalType: 'uint256', name: 'totalParts',  type: 'uint256' },
+          { internalType: 'uint256', name: 'currentPart', type: 'uint256' },
+          { internalType: 'string',  name: 'description', type: 'string'  },
+        ],
+        stateMutability: 'view',
+        type: 'function',
+      },
+    ];
+
+    const MIME_META = {
+      'text/plain':       { label: 'TXT',  cls: 'mime-text',    ext: 'txt'  },
+      'text/html':        { label: 'HTML', cls: 'mime-text',    ext: 'html' },
+      'text/csv':         { label: 'CSV',  cls: 'mime-text',    ext: 'csv'  },
+      'application/json': { label: 'JSON', cls: 'mime-json',    ext: 'json' },
+      'image/png':        { label: 'PNG',  cls: 'mime-image',   ext: 'png'  },
+      'image/jpeg':       { label: 'JPEG', cls: 'mime-image',   ext: 'jpg'  },
+      'image/gif':        { label: 'GIF',  cls: 'mime-image',   ext: 'gif'  },
+      'image/webp':       { label: 'WEBP', cls: 'mime-image',   ext: 'webp' },
+      'image/svg+xml':    { label: 'SVG',  cls: 'mime-image',   ext: 'svg'  },
+      'image/bmp':        { label: 'BMP',  cls: 'mime-image',   ext: 'bmp'  },
+    };
+
+    let web3;
+    let searchContract;
+    let contracts = [];
+
+    function mimeMeta(mimeType) {
+      return MIME_META[mimeType] || {
+        label: (mimeType.split('/')[1] || 'BIN').toUpperCase().slice(0, 6),
+        cls: 'mime-default',
+        ext: 'bin',
+      };
+    }
+
+    function isImage(mimeType) {
+      return mimeType.startsWith('image/');
+    }
+
+    function hexToBytes(hex) {
+      const h = hex.replace(/^0x/, '');
+      const out = new Uint8Array(h.length / 2);
+      for (let i = 0; i < out.length; i++) {
+        out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+      }
+      return out;
+    }
+
+    function formatBytes(n) {
+      if (n < 1024)       return n + ' B';
+      if (n < 1048576)    return (n / 1024).toFixed(1) + ' KB';
+      return (n / 1048576).toFixed(2) + ' MB';
+    }
+
+    function esc(s) {
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function safeName(s) {
+      return s.replace(/[^a-z0-9_\-]/gi, '_').slice(0, 64) || 'content';
+    }
+
+    async function init() {
+      const registry = document.getElementById('footer-registry');
+      registry.textContent = CONFIG.SEARCH_ADDRESS.slice(0, 8) + '…';
+
+      try {
+        web3 = new Web3(CONFIG.RPC_URL);
+        searchContract = new web3.eth.Contract(SEARCH_ABI, CONFIG.SEARCH_ADDRESS);
+        await loadContracts();
+      } catch (err) {
+        showGridError('RPC connection failed: ' + err.message);
+      }
+    }
+
+    async function loadContracts() {
+      const grid = document.getElementById('contracts-grid');
+
+      try {
+        let tagAddresses;
+        try {
+          tagAddresses = await searchContract.methods.getAllTagContracts().call();
+        } catch (e) {
+          throw new Error('getAllTagContracts() failed on Search contract: ' + e.message);
+        }
+
+        if (tagAddresses.length === 0) {
+          const statCount = document.getElementById('stat-count');
+          statCount.textContent = '0';
+          statCount.classList.remove('pending');
+          grid.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-title">No contracts registered</div>
+              <div class="empty-state-desc">Deploy data contracts and register them with the Search contract to display them here.</div>
+            </div>`;
+          return;
+        }
+
+        const dataAddressArrays = await Promise.all(
+          tagAddresses.map(async (tagAddr) => {
+            try {
+              const tc = new web3.eth.Contract(TAG_ABI, tagAddr);
+              return await tc.methods.getAllDataContracts().call();
+            } catch (e) {
+              throw new Error('getAllDataContracts() failed on tag contract ' + tagAddr + ': ' + e.message);
+            }
+          })
+        );
+
+        const allDataAddresses = dataAddressArrays.flat();
+
+        const statCount = document.getElementById('stat-count');
+        statCount.textContent = allDataAddresses.length;
+        statCount.classList.remove('pending');
+
+        if (allDataAddresses.length === 0) {
+          grid.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-title">No data contracts found</div>
+              <div class="empty-state-desc">Tag contracts exist but have no data contracts registered under them.</div>
+            </div>`;
+          return;
+        }
+
+        const results = await Promise.allSettled(
+          allDataAddresses.map(async (addr) => {
+            const dc = new web3.eth.Contract(DATA_ABI, addr);
+            const m = await dc.methods.getMetadata().call();
+            return {
+              address:     addr,
+              mimeType:    m[0] || m.mimeType    || 'text/plain',
+              totalParts:  Number(m[1] ?? m.totalParts  ?? 1),
+              currentPart: Number(m[2] ?? m.currentPart ?? 1),
+              description: m[3] || m.description || 'Untitled',
+            };
+          })
+        );
+
+        contracts = results
+          .filter(r => r.status === 'fulfilled')
+          .map(r => r.value);
+
+        grid.innerHTML = contracts.map((c, i) => cardHTML(c, i)).join('');
+
+      } catch (err) {
+        showGridError('Failed to load contracts: ' + err.message);
+      }
+    }
+
+    function cardHTML(c, i) {
+      const { label, cls } = mimeMeta(c.mimeType);
+      const parts = c.totalParts > 1
+        ? `Part ${c.currentPart} of ${c.totalParts}`
+        : 'Single contract';
+
+      return `
+        <div class="contract-card">
+          <div class="card-header">
+            <div class="card-title">${esc(c.description)}</div>
+            <span class="mime-badge ${cls}">${label}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-address">
+              <span class="addr-label">addr</span>${c.address}
+            </div>
+            <div class="card-footer">
+              <span class="card-parts">${parts}</span>
+              <button class="retrieve-btn" id="btn-${i}" onclick="handleRetrieve(${i})">
+                ▶&nbsp;Retrieve
+              </button>
+            </div>
+          </div>
+          <div class="content-viewer" id="viewer-${i}">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progress-${i}"></div>
+            </div>
+            <div class="content-status" id="status-${i}"></div>
+            <div id="content-${i}"></div>
+            <div class="content-actions" id="actions-${i}"></div>
+          </div>
+        </div>`;
+    }
+
+    async function handleRetrieve(i) {
+      const c       = contracts[i];
+      const btn     = document.getElementById(`btn-${i}`);
+      const viewer  = document.getElementById(`viewer-${i}`);
+      const content = document.getElementById(`content-${i}`);
+      const actions = document.getElementById(`actions-${i}`);
+      const progress = document.getElementById(`progress-${i}`);
+      const status  = document.getElementById(`status-${i}`);
+
+      if (viewer.classList.contains('open')) {
+        viewer.classList.remove('open');
+        btn.textContent = '▶\u00a0Retrieve';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Retrieving…';
+      viewer.classList.add('open');
+      content.innerHTML = '';
+      actions.style.display = 'none';
+      progress.style.width = '0%';
+      status.textContent = 'Connecting…';
+
+      try {
+        const dc    = new web3.eth.Contract(DATA_ABI, c.address);
+        const count = Number(await dc.methods.getDataCount().call());
+
+        status.textContent = `Fetching ${count} chunk${count !== 1 ? 's' : ''}…`;
+
+        let hex = '';
+        for (let j = 0; j < count; j++) {
+          const chunk = await dc.methods.getData(j).call();
+          hex += chunk.replace(/^0x/, '');
+          progress.style.width = `${((j + 1) / count) * 100}%`;
+          status.textContent = `Chunk ${j + 1} / ${count}`;
+        }
+
+        status.textContent = '';
+        const bytes = hexToBytes(hex);
+        renderContent(content, actions, bytes, c.mimeType, c.description);
+
+        btn.textContent = '▲\u00a0Close';
+        btn.disabled = false;
+
+      } catch (err) {
+        content.innerHTML = `<div class="error-box">Retrieval error: ${esc(err.message)}</div>`;
+        status.textContent = '';
+        btn.textContent = '▶\u00a0Retrieve';
+        btn.disabled = false;
+      }
+    }
+
+    function renderContent(contentEl, actionsEl, bytes, mimeType, filename) {
+      if (isImage(mimeType)) {
+        const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+        const img = document.createElement('img');
+        img.className = 'content-image';
+        img.src = url;
+        img.alt = filename;
+        contentEl.appendChild(img);
+      } else {
+        const pre = document.createElement('pre');
+        pre.className = 'content-text';
+        pre.textContent = new TextDecoder().decode(bytes);
+        contentEl.appendChild(pre);
+      }
+
+      buildActions(actionsEl, bytes, mimeType, filename);
+    }
+
+    function buildActions(actionsEl, bytes, mimeType, filename) {
+      const { ext } = mimeMeta(mimeType);
+      const dlName  = safeName(filename) + '.' + ext;
+
+      const dlBtn   = document.createElement('button');
+      dlBtn.className = 'action-btn';
+      dlBtn.textContent = '↓ Download';
+      dlBtn.addEventListener('click', () => {
+        const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = dlName;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      actionsEl.innerHTML = '';
+      actionsEl.appendChild(dlBtn);
+
+      if (!isImage(mimeType)) {
+        const cpBtn = document.createElement('button');
+        cpBtn.className = 'action-btn';
+        cpBtn.textContent = '⎘ Copy';
+        cpBtn.addEventListener('click', async () => {
+          await navigator.clipboard.writeText(new TextDecoder().decode(bytes));
+          cpBtn.textContent = '✓ Copied';
+          setTimeout(() => { cpBtn.textContent = '⎘ Copy'; }, 1800);
+        });
+        actionsEl.appendChild(cpBtn);
+      }
+
+      const sizeEl = document.createElement('span');
+      sizeEl.className = 'size-label';
+      sizeEl.textContent = formatBytes(bytes.length);
+      actionsEl.appendChild(sizeEl);
+
+      actionsEl.style.display = 'flex';
+    }
+
+    function showGridError(msg) {
+      document.getElementById('contracts-grid').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-title" style="color:var(--red)">Connection Error</div>
+          <div class="empty-state-desc">${esc(msg)}</div>
+        </div>`;
+      const s = document.getElementById('stat-count');
+      s.textContent = 'ERR';
+      s.style.color = 'var(--red)';
+      s.classList.remove('pending');
+    }
+
+    init();
+  </script>
+</body>
+</html>
