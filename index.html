@@ -745,9 +745,7 @@
 
     function cardHTML(c, i) {
       const { label, cls } = mimeMeta(c.mimeType);
-      const parts = c.totalParts > 1
-        ? `Part ${c.currentPart} of ${c.totalParts}`
-        : 'Single contract';
+      const parts = `${c.totalParts}-contract upload`;
 
       return `
         <div class="contract-card">
@@ -818,6 +816,11 @@
 
       if (viewer.classList.contains('open')) {
         viewer.classList.remove('open');
+        content.innerHTML = '';
+        actions.innerHTML = '';
+        actions.style.display = 'none';
+        status.textContent = '';
+        progress.style.width = '0%';
         btn.textContent = '▶\u00a0Retrieve';
         return;
       }
