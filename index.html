@@ -38,6 +38,18 @@
       overflow-x: hidden;
     }
 
+    .banner-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-align: center;
+      letter-spacing: 0.06em;
+      position: relative;
+      z-index: 1;
+    }
+
     body::before {
       content: '';
       position: fixed;
@@ -488,9 +500,15 @@
   </style>
 </head>
 <body>
+  <div class="banner-bar">Placeholder header text</div>
+
   <div class="container">
     <header>
       <div class="header-inner">
+        <div>
+          <div class="logo">Placeholder<span> Title</span></div>
+          <p class="header-desc">Placeholder description text. Edit this to describe your project.</p>
+        </div>
         <div class="header-right">
           <div class="badge badge-testnet">
             <span class="badge-dot"></span>
@@ -534,6 +552,7 @@
 
     <footer>
       <div class="footer-inner">
+        <div class="footer-text">Placeholder footer text</div>
         <div class="footer-rpc">
           RPC: ethereum-sepolia-rpc.publicnode.com<br>
           Chain ID: 11155111 (Sepolia)<br>
