@@ -450,6 +450,27 @@
       line-height: 1.8;
     }
 
+    .content-iframe {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #000;
+    }
+
+    .content-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-decoration: none;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .content-link:hover { text-decoration: underline; }
+
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: var(--surface); }
     ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
@@ -866,6 +887,21 @@
       }
     }
 
+    function extractYouTubeId(url) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
+      ];
+      for (const p of patterns) {
+        const m = url.match(p);
+        if (m) return m[1];
+      }
+      return null;
+    }
+
+    function isURL(text) {
+      return /^https?:\/\//i.test(text.trim());
+    }
+
     function renderContent(contentEl, actionsEl, bytes, mimeType, filename) {
       if (isImage(mimeType)) {
         const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
@@ -874,11 +910,36 @@
         img.src = url;
         img.alt = filename;
         contentEl.appendChild(img);
+
       } else {
-        const pre = document.createElement('pre');
-        pre.className = 'content-text';
-        pre.textContent = new TextDecoder().decode(bytes);
-        contentEl.appendChild(pre);
+        const text = new TextDecoder().decode(bytes).trim();
+
+        if (isURL(text)) {
+          const ytId = extractYouTubeId(text);
+
+          if (ytId) {
+            const iframe = document.createElement('iframe');
+            iframe.className = 'content-iframe';
+            iframe.src = `https://www.youtube.com/embed/${ytId}`;
+            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+            iframe.allowFullscreen = true;
+            iframe.title = filename;
+            contentEl.appendChild(iframe);
+          } else {
+            const a = document.createElement('a');
+            a.className = 'content-link';
+            a.href = text;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = '↗ ' + text;
+            contentEl.appendChild(a);
+          }
+        } else {
+          const pre = document.createElement('pre');
+          pre.className = 'content-text';
+          pre.textContent = text;
+          contentEl.appendChild(pre);
+        }
       }
 
       buildActions(actionsEl, bytes, mimeType, filename);
