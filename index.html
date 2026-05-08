@@ -944,6 +944,8 @@
             iframe.allowFullscreen = true;
             iframe.title = filename;
             contentEl.appendChild(iframe);
+            const badge = contentEl.closest('.contract-card')?.querySelector('.mime-badge');
+            if (badge) { badge.textContent = 'VIDEO'; badge.className = 'mime-badge mime-image'; }
           } else {
             const a = document.createElement('a');
             a.className = 'content-link';
