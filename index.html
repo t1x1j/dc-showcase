@@ -11,17 +11,17 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:            #080b0f;
-      --surface:       #0d1117;
-      --surface-2:     #161b22;
-      --border:        #21262d;
-      --border-hover:  #30363d;
+      --bg:            #020403;
+      --surface:       #060c07;
+      --surface-2:     #0a1209;
+      --border:        #1a2e1d;
+      --border-hover:  #254028;
       --accent:        #00ff88;
       --accent-dim:    rgba(0,255,136,0.08);
       --accent-border: rgba(0,255,136,0.25);
-      --text:          #e6edf3;
-      --text-muted:    #7d8590;
-      --text-dim:      #484f58;
+      --text:          #c8f5d8;
+      --text-muted:    #6dbf88;
+      --text-dim:      #3d7a52;
       --red:           #ff6b6b;
       --yellow:        #ffd93d;
       --blue:          #6cb6ff;
@@ -682,6 +682,13 @@
     .hr-sep { color: #062010; }
     .hr-ascii { color: #0b4020; }
 
+    .mode-desc {
+      width: 100%;
+      font-size: 0.62rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+      padding-top: 2px;
+    }
     @media (max-width: 640px) {
       .header-inner { flex-direction: column; }
       .header-right { align-items: flex-start; }
@@ -745,6 +752,7 @@
         <button class="mode-tab" id="mode-tab-2" onclick="setMode(2)">Terminal</button>
         <button class="mode-tab" id="mode-tab-4" onclick="setMode(4)">Hex Dump</button>
       </div>
+      <div class="mode-desc" id="mode-desc">Fetches contract data silently and renders the result directly with no pipeline visualization.</div>
     </div>
 
     <div class="section-label">Registered On-Chain Content</div>
@@ -1061,6 +1069,13 @@
 
     let pipelineMode = 0;
 
+    const MODE_DESCS = {
+      0: 'Fetches contract data silently and renders the result directly with no pipeline visualization.',
+      1: 'Shows a 7-stage horizontal pipeline — Browser → JSON-RPC → ETH Node → State Trie → Hex Chunks → Reassembly → Render — where each node lights up as the corresponding RPC call completes and a packet animates along the wire between stages.',
+      2: 'Opens a terminal window that prints each RPC call as it happens: connection handshake, getMetadata, getDataCount, then one hex-dump line per getData chunk showing the real first 32 bytes, byte count, and per-call latency.',
+      4: 'Splits the viewer in two. The right side shows a live scrolling hex dump of incoming bytes as each getData call returns. The left side fills row-by-row with noise while data arrives, then snaps to the decoded image or text when assembly is complete.',
+    };
+
     function setMode(m) {
       if (m === pipelineMode) return;
       pipelineMode = m;
@@ -1068,6 +1083,8 @@
         const t = document.getElementById(`mode-tab-${id}`);
         if (t) t.classList.toggle('active', id === m);
       });
+      const desc = document.getElementById('mode-desc');
+      if (desc) desc.textContent = MODE_DESCS[m] || '';
       contracts.forEach((_, i) => {
         const viewer = document.getElementById(`viewer-${i}`);
         if (!viewer || !viewer.classList.contains('open')) return;
