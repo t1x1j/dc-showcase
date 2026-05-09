@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>On-Chain Content Retrieval</title>
+  <title>UNIFIED OPERATING SYSTEM // On-Chain Retrieval</title>
   <script data-goatcounter="https://t1x1j.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg:            #020403;
@@ -34,7 +34,7 @@
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'VT323', 'Share Tech Mono', monospace;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -689,6 +689,34 @@
       line-height: 1.6;
       padding-top: 2px;
     }
+    .pipeline-timer {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 8px;
+      letter-spacing: 0.06em;
+    }
+    .pipeline-timer-val {
+      color: var(--accent);
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      min-width: 60px;
+      text-shadow: 0 0 6px rgba(30,255,30,0.7);
+    }
+    .pipeline-timer-dot {
+      width: 6px; height: 6px; border-radius: 0;
+      background: var(--accent);
+      animation: cursor-blink 0.7s step-end infinite;
+      flex-shrink: 0;
+    }
+    .pipeline-timer-dot.done {
+      animation: none;
+      background: var(--accent);
+      opacity: 0.4;
+    }
     @media (max-width: 640px) {
       .header-inner { flex-direction: column; }
       .header-right { align-items: flex-start; }
@@ -698,17 +726,263 @@
       .footer-inner { flex-direction: column; }
       .footer-rpc { text-align: left; }
     }
+  
+    /* ── TERMINAL THEME ── */
+    @keyframes phosphor {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.97; }
+    }
+    @keyframes cursor-blink {
+      0%,49% { opacity: 1; } 50%,100% { opacity: 0; }
+    }
+    @keyframes textflicker {
+      0%,100% { text-shadow: 0 0 6px rgba(30,255,30,0.8); }
+      92% { text-shadow: 0 0 6px rgba(30,255,30,0.8); }
+      93% { text-shadow: none; opacity: 0.92; }
+      94% { text-shadow: 0 0 6px rgba(30,255,30,0.8); }
+    }
+    html { animation: phosphor 4s ease-in-out infinite; }
+
+    * { border-radius: 0 !important; }
+
+    body {
+      font-family: 'VT323', monospace;
+      font-size: 18px;
+      letter-spacing: 0.04em;
+    }
+
+    .banner-bar {
+      background: #000;
+      border-bottom: 1px solid var(--accent);
+      color: var(--text);
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-shadow: 0 0 6px rgba(30,255,30,0.7);
+    }
+
+    .logo {
+      font-family: 'VT323', monospace;
+      animation: textflicker 10s infinite;
+      letter-spacing: 0.08em;
+    }
+    .logo::before { content: '> '; color: var(--text-muted); }
+
+    .header-desc {
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      text-shadow: 0 0 4px rgba(30,255,30,0.5);
+    }
+    .header-desc::before { content: '// '; color: var(--text-dim); }
+
+    header { border-bottom: 1px solid var(--accent); }
+
+    .badge-testnet {
+      background: #000;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      text-shadow: 0 0 6px rgba(30,255,30,0.8);
+    }
+    .badge-dot { border-radius: 0 !important; width: 8px; height: 8px; background: var(--accent); animation: cursor-blink 1s step-end infinite; }
+
+    .stats-bar { border: 1px solid var(--border); background: #000; }
+    .stat { border-right: 1px solid var(--border); }
+    .stat-label {
+      font-family: 'VT323', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      color: var(--text-dim);
+    }
+    .stat-value {
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem;
+      text-shadow: 0 0 6px rgba(30,255,30,0.7);
+    }
+
+    .section-label {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      letter-spacing: 0.2em;
+      color: var(--accent);
+      text-shadow: 0 0 6px rgba(30,255,30,0.7);
+    }
+    .section-label::before { content: '=== '; }
+    .section-label::after  { content: ' ==='; }
+
+    .explainer {
+      font-family: 'VT323', monospace;
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .contract-card {
+      border: 1px solid var(--border);
+      background: #000;
+      position: relative;
+    }
+    .contract-card:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(30,255,30,0.08); }
+    .contract-card::before {
+      content: '+--';
+      position: absolute;
+      top: -1px; left: -1px;
+      color: var(--border);
+      font-family: 'VT323', monospace;
+      font-size: 0.7rem;
+      line-height: 1;
+    }
+
+    .card-header { border-bottom: 1px solid var(--border); background: #000; }
+    .card-title {
+      font-family: 'VT323', monospace;
+      font-size: 1.1rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      text-shadow: 0 0 6px rgba(30,255,30,0.6);
+    }
+
+    .card-address {
+      font-family: 'VT323', monospace;
+      font-size: 0.95rem;
+    }
+    .addr-label::before { content: '>> '; }
+
+    .retrieve-btn {
+      border: 1px solid var(--accent);
+      background: #000;
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      text-shadow: 0 0 6px rgba(30,255,30,0.8);
+      text-transform: uppercase;
+    }
+    .retrieve-btn:hover:not(:disabled) {
+      background: rgba(30,255,30,0.08);
+      box-shadow: 0 0 12px rgba(30,255,30,0.2);
+    }
+    .retrieve-btn::before { content: '> '; }
+
+    .mime-text, .mime-image, .mime-json, .mime-default {
+      border: 1px solid var(--border);
+      background: #000;
+      color: var(--accent);
+      font-family: 'VT323', monospace;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+    }
+
+    .progress-bar { background: var(--border); }
+    .progress-fill {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(30,255,30,0.8);
+    }
+
+    .content-status {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+    .content-status::before { content: '> '; }
+
+    .content-text {
+      background: #000;
+      border: 1px solid var(--border);
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      color: var(--accent);
+    }
+
+    .content-image { border: 1px solid var(--border); }
+
+    .action-btn {
+      border: 1px solid var(--border);
+      background: #000;
+      font-family: 'VT323', monospace;
+      font-size: 0.95rem;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    .mode-label {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      letter-spacing: 0.14em;
+      color: var(--text-dim);
+    }
+    .mode-tabs { border: 1px solid var(--border); background: #000; }
+    .mode-tab {
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+      letter-spacing: 0.1em;
+      border-right: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .mode-tab.active {
+      color: var(--accent);
+      background: rgba(30,255,30,0.06);
+      text-shadow: 0 0 6px rgba(30,255,30,0.7);
+    }
+    .mode-tab.active::before { content: '> '; }
+    .mode-desc {
+      font-family: 'VT323', monospace;
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      border-left: 1px solid var(--border);
+      padding-left: 10px;
+    }
+    .mode-desc::before { content: '// '; }
+
+    .card-parts { font-family: 'VT323', monospace; font-size: 0.95rem; }
+
+    .skeleton { background: #000; border: 1px solid var(--border); animation: none; }
+
+    .footer-text { font-family: 'VT323', monospace; font-size: 0.95rem; }
+    .footer-text a { color: var(--accent); text-shadow: 0 0 6px rgba(30,255,30,0.6); }
+    .footer-rpc { font-family: 'VT323', monospace; font-size: 0.9rem; }
+
+    .error-box {
+      background: #000;
+      border: 1px solid var(--accent);
+      font-family: 'VT323', monospace;
+      font-size: 1rem;
+    }
+
+    ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 0 !important; }
+
+    /* Pipeline overrides for terminal theme */
+    .pipeline-terminal { background: #000; border: 1px solid var(--border); }
+    .pipeline-terminal-bar { background: #000; border-bottom: 1px solid var(--border); }
+    .ptb-label { font-family: 'VT323', monospace; font-size: 0.9rem; color: var(--text-dim); }
+    .pipeline-terminal-out { font-family: 'VT323', monospace; font-size: 1rem; }
+    .pipeline-flow { background: #000; border: 1px solid var(--border); }
+    .pf-log { font-family: 'VT323', monospace; font-size: 0.9rem; }
+    .hex-split { border: 1px solid var(--border); }
+    .hex-left { background: #000; border-right: 1px solid var(--border); }
+    .hex-right { background: #000; }
+    .hex-right-bar { background: #000; border-bottom: 1px solid var(--border); }
+    .hrb-label { font-family: 'VT323', monospace; font-size: 0.85rem; color: var(--text-dim); }
+    .hex-right-out { font-family: 'VT323', monospace; font-size: 0.9rem; }
+
   </style>
 </head>
 <body>
-  <div class="banner-bar"></div>
+  <div class="banner-bar">UNIFIED OPERATING SYSTEM &nbsp;|&nbsp; ON-CHAIN RETRIEVAL INTERFACE &nbsp;|&nbsp; NODE: SEPOLIA &nbsp;|&nbsp; -64 LINES</div>
 
   <div class="container">
     <header>
       <div class="header-inner">
         <div>
-          <div class="logo">On-Chain Retrieval Showcase</div>
-          <p class="header-desc">This is a showcase demonstrating how content of any kind can be stored on the Ethereum blockchain and easily retrieved and served elsewhere online.</p>
+          <div class="logo">On-Chain Retrieval Interface</div>
+          <p class="header-desc">Content stored across the Ethereum state trie. Select a record to begin retrieval via JSON-RPC uplink. All data is read-only.</p>
         </div>
         <div class="header-right">
           <div class="badge badge-testnet">
@@ -1152,12 +1426,40 @@
       requestAnimationFrame(tick);
     }
 
+    /* ── Shared pipeline timer ── */
+    function makeTimer(container, label) {
+      const wrap = document.createElement('div');
+      wrap.className = 'pipeline-timer';
+      wrap.innerHTML = `<div class="pipeline-timer-dot" id="ptdot-${label}"></div>
+        <span style="color:var(--text-dim)">// elapsed</span>
+        <span class="pipeline-timer-val" id="ptval-${label}">0.000s</span>`;
+      container.appendChild(wrap);
+      const t0 = Date.now();
+      const raf = { id: null };
+      const tick = () => {
+        const el = document.getElementById(`ptval-${label}`);
+        if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(3) + 's';
+        raf.id = requestAnimationFrame(tick);
+      };
+      raf.id = requestAnimationFrame(tick);
+      return {
+        stop() {
+          cancelAnimationFrame(raf.id);
+          const el = document.getElementById(`ptval-${label}`);
+          const dot = document.getElementById(`ptdot-${label}`);
+          if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(3) + 's';
+          if (dot) dot.className = 'pipeline-timer-dot done';
+        },
+        elapsed() { return Date.now() - t0; }
+      };
+    }
+
     async function retrieveV1(i, c, content, actions, progress) {
       const flowWrap = document.createElement('div');
       flowWrap.className = 'pipeline-flow';
       flowWrap.innerHTML = buildFlowSVG(i) + `<div class="pf-log active" id="pf-log-${i}">Initializing…</div>`;
       content.appendChild(flowWrap);
-
+      const timer = makeTimer(flowWrap, `v1-${i}`);
       const setLog = (txt, active=true) => { const el = document.getElementById(`pf-log-${i}`); if(el){el.textContent=txt; el.className=`pf-log${active?' active':''}`;}};
       const setBytes = txt => { const el = document.getElementById(`pf-bytes-${i}`); if(el) el.textContent=txt; };
       const delay = ms => new Promise(r => setTimeout(r, ms));
@@ -1197,7 +1499,7 @@
       pfActivate(i, 6); setLog('Rendering content…'); progress.style.width='100%'; await delay(80);
       setLog(`Done — ${totalBytes.toLocaleString()} B · ${c.mimeType}`, false);
       setBytes(`${totalBytes.toLocaleString()} B · ${received} chunks · ${c.mimeType}`);
-
+      timer.stop();
       return allHex;
     }
 
@@ -1227,8 +1529,8 @@
         <div class="pipeline-terminal-out" id="ptout-${i}"></div>`;
       content.appendChild(term);
       const out=document.getElementById(`ptout-${i}`);
+      const timer=makeTimer(term,`v2-${i}`);
       const delay=ms=>new Promise(r=>setTimeout(r,ms));
-      const t0=Date.now();
 
       ptLine(out,`<span class="pt-key">transport</span>  <span class="pt-val">${CONFIG.RPC_URL.replace('https://','')}</span>`); await delay(120);
       ptLine(out,`<span class="pt-key">eth_chainId</span>  <span class="pt-comment">→  </span><span class="pt-val">0xaa36a7</span><span class="pt-comment">  (Sepolia)</span>`);
@@ -1272,9 +1574,10 @@
 
       ptSpacer(out);
       ptLine(out,`<span class="pt-key">sha256</span>  <span class="pt-comment">verifying…</span>`); await delay(180);
-      ptLine(out,`<span class="pt-success">✓ complete</span>  <span class="pt-comment">${totalBytes.toLocaleString()} B  ·  ${received} chunks  ·  ${Date.now()-t0}ms</span>`);
+      ptLine(out,`<span class="pt-success">✓ complete</span>  <span class="pt-comment">${totalBytes.toLocaleString()} B  ·  ${received} chunks  ·  ${timer.elapsed()}ms</span>`);
       ptSpacer(out); ptComment(out,`<span class="pt-dim">// rendering…</span>`);
       progress.style.width='100%';
+      timer.stop();
       return allHex;
     }
 
@@ -1307,6 +1610,7 @@
         <div class="hex-right-out" id="hxr-${i}"></div>
       </div>`;
       content.appendChild(split);
+      const timer4=makeTimer(split,`v4-${i}`);
 
       const leftEl=document.getElementById(`hxl-${i}`);
       const waitEl=document.getElementById(`hxl-wait-${i}`);
@@ -1338,7 +1642,7 @@
           const bytes=hexToBytes(hex); totalBytes+=bytes.length; received++;
           for (let k=0; k<bytes.length; k+=16) {
             const sl=bytes.slice(k,k+16);
-            rightOut.innerHTML+=hrFormatLine(offset+k,sl,j===0&&k===0);
+            rightOut.insertAdjacentHTML('beforeend', hrFormatLine(offset+k,sl,j===0&&k===0));
             hexLineCount++;
             if(hexLineCount>60) rightOut.removeChild(rightOut.firstChild);
           }
@@ -1369,9 +1673,10 @@
       } else {
         const td=document.getElementById(`hxlt-${i}`); if(td) td.textContent=new TextDecoder().decode(finalBytes);
       }
-      rightOut.innerHTML+=`<div style="padding:4px 0;color:#0d7040;font-size:0.56rem;">// decode complete · ${totalBytes.toLocaleString()} B · ${received} chunks</div>`;
+      rightOut.insertAdjacentHTML('beforeend', `<div style="padding:4px 0;color:#0d7040;font-size:0.56rem;">// decode complete · ${totalBytes.toLocaleString()} B · ${received} chunks</div>`);
       rightOut.scrollTop=rightOut.scrollHeight;
       progress.style.width='100%';
+      timer4.stop();
       return allHex;
     }
 
@@ -1406,6 +1711,10 @@
         } else if (pipelineMode === 4) {
           allHex = await retrieveV4(i, c, content, actions, progress);
         } else {
+          const timerWrap = document.createElement('div');
+          timerWrap.style.cssText = 'margin-bottom:8px;';
+          content.appendChild(timerWrap);
+          const timer0 = makeTimer(timerWrap, `v0-${i}`);
           status.textContent = c.totalParts > 1 ? `Resolving ${c.totalParts}-part content…` : 'Fetching…';
           const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
           allHex = '';
@@ -1416,6 +1725,7 @@
           }
           status.textContent='';
           progress.style.width='100%';
+          timer0.stop();
         }
 
         const bytes = hexToBytes(allHex);
