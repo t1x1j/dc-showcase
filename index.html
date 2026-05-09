@@ -187,6 +187,14 @@
       margin-bottom: 16px;
     }
 
+    .explainer {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      line-height: 1.7;
+      margin-bottom: 28px;
+      max-width: 860px;
+    }
+
     .contracts-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
@@ -541,6 +549,8 @@
         <div class="stat-value">Read-Only</div>
       </div>
     </div>
+
+    <p class="explainer">Each item on this page is stored permanently across one or more Ethereum smart contracts on the Sepolia testnet. When you click Retrieve, the browser connects directly to a public Ethereum node via JSON-RPC, fetches raw hex data chunk by chunk, reassembles it client-side, and renders it. It does not interact with a server, with IPFS, or any other intermediary. Multi-part uploads are reconstructed by following linked contract addresses until all chunks are collected. Once deployed, the content cannot be removed by any single party.</p>
 
     <div class="section-label">Registered On-Chain Content</div>
 
