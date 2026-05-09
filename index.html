@@ -497,6 +497,191 @@
     ::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
+    .mode-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .mode-label {
+      font-size: 0.58rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      flex-shrink: 0;
+    }
+    .mode-tabs {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .mode-tab {
+      padding: 6px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border);
+      cursor: pointer;
+      transition: color 0.12s, background 0.12s;
+    }
+    .mode-tab:last-child { border-right: none; }
+    .mode-tab:hover:not(.active) { color: var(--text-muted); background: var(--surface-2); }
+    .mode-tab.active { color: var(--accent); background: var(--accent-dim); }
+
+    /* Pipeline V1 — Network Flow */
+    .pipeline-flow {
+      margin-bottom: 14px;
+      background: #030508;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 18px 14px 14px;
+      overflow: hidden;
+    }
+    .pf-svg { display: block; width: 100%; overflow: visible; }
+    .pf-log {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: #1a4030;
+      margin-top: 10px;
+      min-height: 18px;
+      letter-spacing: 0.04em;
+      transition: color 0.2s;
+    }
+    .pf-log.active { color: var(--accent); }
+
+    /* Pipeline V2 — Terminal */
+    .pipeline-terminal {
+      background: #020402;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .pipeline-terminal-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 10px;
+      background: #060806;
+      border-bottom: 1px solid var(--border);
+    }
+    .ptb-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .ptb-dot.r { background: #2a0a0a; }
+    .ptb-dot.y { background: #2a2200; }
+    .ptb-dot.g { background: #082a10; }
+    .ptb-label { font-size: 0.58rem; color: #1a4028; letter-spacing: 0.07em; margin-left: 6px; }
+    .pipeline-terminal-out {
+      padding: 0.7rem 0.9rem 1rem;
+      font-size: 0.64rem;
+      line-height: 1.65;
+      max-height: 260px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+    .pipeline-terminal-out::-webkit-scrollbar { width: 3px; }
+    .pipeline-terminal-out::-webkit-scrollbar-thumb { background: #0b4020; border-radius: 2px; }
+    .pt-line { display: flex; gap: 0.4rem; margin-bottom: 1px; word-break: break-all; }
+    .pt-prompt { color: #0b5030; flex-shrink: 0; }
+    .pt-key { color: #00d4ff; }
+    .pt-val { color: var(--accent); }
+    .pt-hex { color: #17a854; letter-spacing: 0.03em; }
+    .pt-comment { color: #0b4022; }
+    .pt-warn { color: var(--yellow); }
+    .pt-success { color: var(--accent); font-weight: 700; }
+    .pt-dim { color: #0a2a16; }
+    .pipeline-cursor {
+      display: inline-block; width: 6px; height: 11px;
+      background: var(--accent); vertical-align: middle;
+      animation: blink 0.9s step-end infinite; margin-left: 2px;
+    }
+
+    /* Pipeline V4 — Hex Dump */
+    .hex-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      background: #030508;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      height: 260px;
+    }
+    .hex-left {
+      border-right: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #020405;
+    }
+    .hex-left-label {
+      position: absolute;
+      top: 6px; left: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.55rem;
+      color: #0b4022;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .hex-left canvas { display: block; max-width: 100%; max-height: 100%; }
+    .hex-left-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.6rem;
+      color: #0d7040;
+      padding: 8px;
+      word-break: break-all;
+      line-height: 1.5;
+      max-height: 100%;
+      overflow: hidden;
+    }
+    .hex-left-waiting { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: #0a2a16; }
+    .hex-right {
+      background: #020304;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .hex-right-bar {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px;
+      background: #040608;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .hrb-dot { width: 7px; height: 7px; border-radius: 50%; }
+    .hrb-dot.r{background:#1a0606;} .hrb-dot.y{background:#1a1600;} .hrb-dot.g{background:#061a0c;}
+    .hrb-label { font-family:'JetBrains Mono',monospace; font-size:0.52rem; color:#0a2e18; margin-left:4px; }
+    .hex-right-out {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0.4rem 0.6rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.58rem;
+      line-height: 1.55;
+      scrollbar-width: thin;
+    }
+    .hex-right-out::-webkit-scrollbar { width: 2px; }
+    .hex-right-out::-webkit-scrollbar-thumb { background: #0b3a1e; border-radius: 2px; }
+    .hr-line { white-space: nowrap; margin-bottom: 1px; }
+    .hr-addr { color: #0e5030; }
+    .hr-bytes { color: #14853e; }
+    .hr-hi { color: var(--accent); }
+    .hr-sep { color: #062010; }
+    .hr-ascii { color: #0b4020; }
+
     @media (max-width: 640px) {
       .header-inner { flex-direction: column; }
       .header-right { align-items: flex-start; }
@@ -551,6 +736,16 @@
     </div>
 
     <p class="explainer">Each item on this page is stored permanently across one or more Ethereum smart contracts on the Sepolia testnet. When you click Retrieve, the browser connects directly to a public Ethereum node via JSON-RPC, fetches raw hex data chunk by chunk, reassembles it client-side, and renders it. It does not interact with a server, with IPFS, or any other intermediary. Multi-part uploads are reconstructed by following linked contract addresses until all chunks are collected. Once deployed, the content cannot be removed by any single party.</p>
+
+    <div class="mode-bar">
+      <span class="mode-label">Pipeline Mode</span>
+      <div class="mode-tabs">
+        <button class="mode-tab active" id="mode-tab-0" onclick="setMode(0)">Original</button>
+        <button class="mode-tab" id="mode-tab-1" onclick="setMode(1)">Network Flow</button>
+        <button class="mode-tab" id="mode-tab-2" onclick="setMode(2)">Terminal</button>
+        <button class="mode-tab" id="mode-tab-4" onclick="setMode(4)">Hex Dump</button>
+      </div>
+    </div>
 
     <div class="section-label">Registered On-Chain Content</div>
 
@@ -864,6 +1059,306 @@
       return ordered;
     }
 
+    let pipelineMode = 0;
+
+    function setMode(m) {
+      if (m === pipelineMode) return;
+      pipelineMode = m;
+      [0, 1, 2, 4].forEach(id => {
+        const t = document.getElementById(`mode-tab-${id}`);
+        if (t) t.classList.toggle('active', id === m);
+      });
+      contracts.forEach((_, i) => {
+        const viewer = document.getElementById(`viewer-${i}`);
+        if (!viewer || !viewer.classList.contains('open')) return;
+        viewer.classList.remove('open');
+        document.getElementById(`content-${i}`).innerHTML = '';
+        const actions = document.getElementById(`actions-${i}`);
+        actions.innerHTML = ''; actions.style.display = 'none';
+        document.getElementById(`status-${i}`).textContent = '';
+        document.getElementById(`progress-${i}`).style.width = '0%';
+        const btn = document.getElementById(`btn-${i}`);
+        btn.textContent = '▶\u00a0Retrieve'; btn.disabled = false;
+      });
+    }
+
+    /* ── V1 Network Flow helpers ── */
+    const FLOW_STAGES = ['BROWSER','JSON-RPC','ETH NODE','STATE TRIE','HEX CHUNKS','REASSEMBLY','RENDER'];
+
+    function buildFlowSVG(cardIdx) {
+      const n = FLOW_STAGES.length;
+      const nodeW = 68, nodeH = 28, gap = 18;
+      const totalW = n * nodeW + (n - 1) * gap;
+      const svgH = nodeH + 24;
+      let rects = '', labels = '', conns = '';
+      for (let s = 0; s < n; s++) {
+        const x = s * (nodeW + gap), mid = nodeH / 2;
+        rects  += `<rect id="pf-node-${cardIdx}-${s}" x="${x}" y="0" width="${nodeW}" height="${nodeH}" rx="3" fill="#060a08" stroke="#1a2e22" stroke-width="1"/>`;
+        labels += `<text id="pf-label-${cardIdx}-${s}" x="${x + nodeW/2}" y="${mid + 4}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="#1a4028" letter-spacing="0.05em">${FLOW_STAGES[s]}</text>`;
+        if (s < n - 1) {
+          const lx = x + nodeW, rx2 = lx + gap;
+          conns += `<line id="pf-conn-${cardIdx}-${s}" x1="${lx}" y1="${mid}" x2="${rx2}" y2="${mid}" stroke="#1a2e22" stroke-width="2"/>`;
+          conns += `<circle id="pf-pkt-${cardIdx}-${s}" cx="${lx}" cy="${mid}" r="3" fill="#0b5030" opacity="0"/>`;
+        }
+      }
+      return `<svg class="pf-svg" viewBox="0 0 ${totalW} ${svgH}" xmlns="http://www.w3.org/2000/svg">${conns}${rects}${labels}
+        <text id="pf-bytes-${cardIdx}" x="${totalW/2}" y="${svgH}" text-anchor="middle" font-family="JetBrains Mono,monospace" font-size="7" fill="#0b4022">—</text></svg>`;
+    }
+
+    function pfActivate(cardIdx, stage) {
+      for (let s = 0; s < FLOW_STAGES.length; s++) {
+        const node = document.getElementById(`pf-node-${cardIdx}-${s}`);
+        const lbl  = document.getElementById(`pf-label-${cardIdx}-${s}`);
+        if (!node) continue;
+        if (s < stage) {
+          node.setAttribute('stroke','#0b5030'); node.setAttribute('fill','#040804'); lbl.setAttribute('fill','#0d7040');
+        } else if (s === stage) {
+          node.setAttribute('stroke','var(--accent)'); node.setAttribute('fill','#040e06'); lbl.setAttribute('fill','var(--accent)');
+          pfAnimPkt(cardIdx, stage);
+        } else {
+          node.setAttribute('stroke','#1a2e22'); node.setAttribute('fill','#060a08'); lbl.setAttribute('fill','#1a4028');
+        }
+      }
+    }
+
+    function pfAnimPkt(cardIdx, stage) {
+      if (stage >= FLOW_STAGES.length - 1) return;
+      const pkt  = document.getElementById(`pf-pkt-${cardIdx}-${stage}`);
+      const conn = document.getElementById(`pf-conn-${cardIdx}-${stage}`);
+      if (!pkt || !conn) return;
+      const nodeW = 68, gap = 18, mid = 14;
+      const x1 = stage * (nodeW + gap) + nodeW, x2 = x1 + gap;
+      conn.setAttribute('stroke','#0d7040');
+      pkt.setAttribute('opacity','1');
+      let t = 0;
+      const tick = () => { t++; pkt.setAttribute('cx', x1 + (x2-x1)*(t/12)); if (t<12) requestAnimationFrame(tick); else pkt.setAttribute('opacity','0'); };
+      requestAnimationFrame(tick);
+    }
+
+    async function retrieveV1(i, c, content, actions, progress) {
+      const flowWrap = document.createElement('div');
+      flowWrap.className = 'pipeline-flow';
+      flowWrap.innerHTML = buildFlowSVG(i) + `<div class="pf-log active" id="pf-log-${i}">Initializing…</div>`;
+      content.appendChild(flowWrap);
+
+      const setLog = (txt, active=true) => { const el = document.getElementById(`pf-log-${i}`); if(el){el.textContent=txt; el.className=`pf-log${active?' active':''}`;}};
+      const setBytes = txt => { const el = document.getElementById(`pf-bytes-${i}`); if(el) el.textContent=txt; };
+      const delay = ms => new Promise(r => setTimeout(r, ms));
+
+      pfActivate(i, 0); setLog('Connecting to node…'); await delay(200);
+      pfActivate(i, 1); setLog('Establishing JSON-RPC session…'); await delay(180);
+      pfActivate(i, 2); setLog(`eth_call → getMetadata(${c.address.slice(0,8)}…)`);
+
+      const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
+      await delay(80);
+
+      pfActivate(i, 3); setLog('Resolving state trie storage slots…');
+      const chunkCounts = [];
+      let totalChunks = 0;
+      for (const addr of ordered) {
+        const dc = new web3.eth.Contract(DATA_ABI, addr);
+        const cnt = Number(await dc.methods.getDataCount().call());
+        chunkCounts.push(cnt); totalChunks += cnt;
+      }
+      setLog(`${totalChunks} chunks across ${ordered.length} contract(s)`); await delay(100);
+
+      pfActivate(i, 4);
+      let received = 0, totalBytes = 0, allHex = '';
+      for (let p = 0; p < ordered.length; p++) {
+        const dc = new web3.eth.Contract(DATA_ABI, ordered[p]);
+        for (let j = 0; j < chunkCounts[p]; j++) {
+          const raw = await dc.methods.getData(j).call();
+          const hex = raw.replace(/^0x/,''); allHex += hex;
+          received++; totalBytes += hex.length/2;
+          progress.style.width = `${(received/totalChunks)*80}%`;
+          setLog(`chunk ${received}/${totalChunks} — ${totalBytes.toLocaleString()} bytes received`);
+          setBytes(`${totalBytes.toLocaleString()} B received · chunk ${received}/${totalChunks}`);
+        }
+      }
+
+      pfActivate(i, 5); setLog('Reassembling hex chunks…'); progress.style.width='90%'; await delay(150);
+      pfActivate(i, 6); setLog('Rendering content…'); progress.style.width='100%'; await delay(80);
+      setLog(`Done — ${totalBytes.toLocaleString()} B · ${c.mimeType}`, false);
+      setBytes(`${totalBytes.toLocaleString()} B · ${received} chunks · ${c.mimeType}`);
+
+      return allHex;
+    }
+
+    /* ── V2 Terminal helpers ── */
+    function ptLine(out, html) {
+      const d = document.createElement('div'); d.className='pt-line';
+      d.innerHTML=`<span class="pt-prompt">›</span><span>${html}</span>`;
+      out.appendChild(d); out.scrollTop=out.scrollHeight;
+    }
+    function ptComment(out, html) {
+      const d=document.createElement('div'); d.className='pt-line'; d.innerHTML=`<span>${html}</span>`;
+      out.appendChild(d); out.scrollTop=out.scrollHeight;
+    }
+    function ptSpacer(out) { const d=document.createElement('div'); d.style.height='4px'; out.appendChild(d); }
+    function ptHexLine(addr, bytes) {
+      const a='0x'+addr.toString(16).padStart(8,'0');
+      const parts=[]; for(let k=0;k<bytes.length;k++){parts.push(bytes[k].toString(16).padStart(2,'0'));if(k===7)parts.push('');}
+      const ascii=bytes.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+      return `<span class="pt-comment">${a}  </span><span class="pt-hex">${parts.join(' ')}</span><span class="pt-comment">  |${ascii}|</span>`;
+    }
+
+    async function retrieveV2(i, c, content, actions, progress) {
+      const term = document.createElement('div'); term.className='pipeline-terminal';
+      term.innerHTML=`<div class="pipeline-terminal-bar">
+        <div class="ptb-dot r"></div><div class="ptb-dot y"></div><div class="ptb-dot g"></div>
+        <div class="ptb-label">eth-node-session — ${c.address.slice(0,8)}…</div></div>
+        <div class="pipeline-terminal-out" id="ptout-${i}"></div>`;
+      content.appendChild(term);
+      const out=document.getElementById(`ptout-${i}`);
+      const delay=ms=>new Promise(r=>setTimeout(r,ms));
+      const t0=Date.now();
+
+      ptLine(out,`<span class="pt-key">transport</span>  <span class="pt-val">${CONFIG.RPC_URL.replace('https://','')}</span>`); await delay(120);
+      ptLine(out,`<span class="pt-key">eth_chainId</span>  <span class="pt-comment">→  </span><span class="pt-val">0xaa36a7</span><span class="pt-comment">  (Sepolia)</span>`);
+      ptSpacer(out);
+
+      const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
+      ptLine(out,`<span class="pt-key">getMetadata</span>  <span class="pt-comment">addr: </span><span class="pt-val">${c.address}</span>`); await delay(80);
+      ptLine(out,`<span class="pt-comment">←  mime: </span><span class="pt-val">${c.mimeType}</span><span class="pt-comment">  parts: </span><span class="pt-val">${c.totalParts}</span>`);
+      ptSpacer(out);
+
+      const chunkCounts=[]; let totalChunks=0;
+      for (const addr of ordered) {
+        const dc=new web3.eth.Contract(DATA_ABI,addr);
+        const cnt=Number(await dc.methods.getDataCount().call());
+        chunkCounts.push(cnt); totalChunks+=cnt;
+        ptLine(out,`<span class="pt-key">getDataCount</span>  <span class="pt-val">${addr.slice(0,10)}…</span>  <span class="pt-comment">→  </span><span class="pt-val">${cnt} chunks</span>`); await delay(60);
+      }
+      ptSpacer(out); ptComment(out,`<span class="pt-comment">// fetching ${totalChunks} chunks across ${ordered.length} contract(s)</span>`); ptSpacer(out);
+
+      let offset=0, totalBytes=0, received=0, allHex='';
+      for (let p=0; p<ordered.length; p++) {
+        const dc=new web3.eth.Contract(DATA_ABI,ordered[p]);
+        if (ordered.length>1) { ptLine(out,`<span class="pt-comment">// contract ${p+1}/${ordered.length}: ${ordered[p]}</span>`); ptSpacer(out); }
+        for (let j=0; j<chunkCounts[p]; j++) {
+          const t1=Date.now();
+          const raw=await dc.methods.getData(j).call();
+          const lat=Date.now()-t1;
+          const hex=raw.replace(/^0x/,''); allHex+=hex;
+          const bytes=hexToBytes(hex); totalBytes+=bytes.length; received++;
+          const d16=bytes.slice(0,16);
+          ptLine(out,`<span class="pt-comment">chunk[${String(j).padStart(2,'0')}]  </span>${ptHexLine(offset,d16)}<span class="pt-comment">  ${bytes.length}B  ${lat}ms</span>`);
+          if (bytes.length>16) {
+            const extra=bytes.slice(16,32);
+            if(extra.length) ptLine(out,`<span class="pt-comment">         </span>${ptHexLine(offset+16,extra)}`);
+            if(bytes.length>32) ptComment(out,`<span class="pt-dim">         … ${bytes.length-32} more bytes …</span>`);
+          }
+          offset+=bytes.length;
+          progress.style.width=`${(received/totalChunks)*90}%`;
+        }
+      }
+
+      ptSpacer(out);
+      ptLine(out,`<span class="pt-key">sha256</span>  <span class="pt-comment">verifying…</span>`); await delay(180);
+      ptLine(out,`<span class="pt-success">✓ complete</span>  <span class="pt-comment">${totalBytes.toLocaleString()} B  ·  ${received} chunks  ·  ${Date.now()-t0}ms</span>`);
+      ptSpacer(out); ptComment(out,`<span class="pt-dim">// rendering…</span>`);
+      progress.style.width='100%';
+      return allHex;
+    }
+
+    /* ── V4 Hex Dump helpers ── */
+    function hrFormatLine(addr, bytes, isFirst) {
+      const a='0x'+addr.toString(16).padStart(8,'0');
+      const parts=[]; for(let k=0;k<bytes.length;k++){const bh=bytes[k].toString(16).padStart(2,'0'); const hi=isFirst&&k<8; parts.push(hi?`<span class="hr-hi">${bh}</span>`:`<span class="hr-bytes">${bh}</span>`); if(k===7)parts.push(' ');}
+      const ascii=bytes.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+      return `<div class="hr-line"><span class="hr-addr">${a}  </span>${parts.join(' ')}<span class="hr-sep">  |</span><span class="hr-ascii">${ascii}</span><span class="hr-sep">|</span></div>`;
+    }
+
+    function noiseCanvas(canvas, w, h) {
+      const ctx=canvas.getContext('2d'); const id=ctx.createImageData(w,h);
+      for(let k=0;k<id.data.length;k+=4){const v=Math.floor(Math.random()*14); id.data[k]=v; id.data[k+1]=Math.floor(v*1.4+Math.random()*4); id.data[k+2]=v; id.data[k+3]=255;}
+      ctx.putImageData(id,0,0);
+    }
+
+    async function retrieveV4(i, c, content, actions, progress) {
+      const isImg = c.mimeType.startsWith('image/');
+      const split = document.createElement('div'); split.className='hex-split';
+      split.innerHTML=`<div class="hex-left" id="hxl-${i}">
+        <div class="hex-left-label">render output</div>
+        <div class="hex-left-waiting" id="hxl-wait-${i}">// no data</div>
+      </div>
+      <div class="hex-right">
+        <div class="hex-right-bar">
+          <div class="hrb-dot r"></div><div class="hrb-dot y"></div><div class="hrb-dot g"></div>
+          <div class="hrb-label">${c.address.slice(0,10)}… · hex dump</div>
+        </div>
+        <div class="hex-right-out" id="hxr-${i}"></div>
+      </div>`;
+      content.appendChild(split);
+
+      const leftEl=document.getElementById(`hxl-${i}`);
+      const waitEl=document.getElementById(`hxl-wait-${i}`);
+      const rightOut=document.getElementById(`hxr-${i}`);
+
+      let renderCanvas=null, renderCtx=null, canvasW=0, canvasH=0;
+      if (isImg) {
+        const lW=leftEl.clientWidth||200, lH=leftEl.clientHeight||240;
+        const sz=Math.min(lW-16,lH-24,180); canvasW=sz; canvasH=sz;
+        renderCanvas=document.createElement('canvas'); renderCanvas.width=sz; renderCanvas.height=sz;
+        renderCtx=renderCanvas.getContext('2d');
+        noiseCanvas(renderCanvas,sz,sz); waitEl.remove(); leftEl.appendChild(renderCanvas);
+      }
+
+      const ordered=await buildOrderedAddresses(c.address,c.totalParts,c.currentPart);
+      const chunkCounts=[]; let totalChunks=0;
+      for (const addr of ordered) {
+        const dc=new web3.eth.Contract(DATA_ABI,addr);
+        const cnt=Number(await dc.methods.getDataCount().call());
+        chunkCounts.push(cnt); totalChunks+=cnt;
+      }
+
+      let offset=0, received=0, totalBytes=0, allHex='', hexLineCount=0;
+      for (let p=0; p<ordered.length; p++) {
+        const dc=new web3.eth.Contract(DATA_ABI,ordered[p]);
+        for (let j=0; j<chunkCounts[p]; j++) {
+          const raw=await dc.methods.getData(j).call();
+          const hex=raw.replace(/^0x/,''); allHex+=hex;
+          const bytes=hexToBytes(hex); totalBytes+=bytes.length; received++;
+          for (let k=0; k<bytes.length; k+=16) {
+            const sl=bytes.slice(k,k+16);
+            rightOut.innerHTML+=hrFormatLine(offset+k,sl,j===0&&k===0);
+            hexLineCount++;
+            if(hexLineCount>60) rightOut.removeChild(rightOut.firstChild);
+          }
+          rightOut.scrollTop=rightOut.scrollHeight;
+          offset+=bytes.length;
+          if (isImg&&renderCanvas) {
+            const rowEnd=Math.ceil(canvasH*received/totalChunks);
+            const rowStart=Math.ceil(canvasH*(received-1)/totalChunks);
+            for(let row=rowStart; row<rowEnd&&row<canvasH; row++){
+              const px=renderCtx.createImageData(canvasW,1);
+              for(let q=0;q<px.data.length;q+=4){const v=Math.floor(Math.random()*8); px.data[q]=v; px.data[q+1]=Math.floor(v*1.6); px.data[q+2]=v; px.data[q+3]=255;}
+              renderCtx.putImageData(px,0,row);
+            }
+          } else if (!isImg) {
+            const decoded=new TextDecoder().decode(hexToBytes(allHex));
+            const partial=decoded.slice(0,Math.floor(decoded.length*received/totalChunks));
+            if(!leftEl.querySelector('.hex-left-text')){waitEl&&waitEl.remove(); const td=document.createElement('div'); td.className='hex-left-text'; td.id=`hxlt-${i}`; leftEl.appendChild(td);}
+            const td=document.getElementById(`hxlt-${i}`); if(td) td.textContent=partial.slice(-600);
+          }
+          progress.style.width=`${(received/totalChunks)*92}%`;
+        }
+      }
+
+      const finalBytes=hexToBytes(allHex);
+      if (isImg&&renderCanvas) {
+        const url=URL.createObjectURL(new Blob([finalBytes],{type:c.mimeType}));
+        const img=new Image(); img.onload=()=>{renderCtx.drawImage(img,0,0,canvasW,canvasH); URL.revokeObjectURL(url);}; img.src=url;
+      } else {
+        const td=document.getElementById(`hxlt-${i}`); if(td) td.textContent=new TextDecoder().decode(finalBytes);
+      }
+      rightOut.innerHTML+=`<div style="padding:4px 0;color:#0d7040;font-size:0.56rem;">// decode complete · ${totalBytes.toLocaleString()} B · ${received} chunks</div>`;
+      rightOut.scrollTop=rightOut.scrollHeight;
+      progress.style.width='100%';
+      return allHex;
+    }
+
+    /* ── Main dispatcher ── */
     async function handleRetrieve(i) {
       const c        = contracts[i];
       const btn      = document.getElementById(`btn-${i}`);
@@ -875,52 +1370,47 @@
 
       if (viewer.classList.contains('open')) {
         viewer.classList.remove('open');
-        content.innerHTML = '';
-        actions.innerHTML = '';
-        actions.style.display = 'none';
-        status.textContent = '';
-        progress.style.width = '0%';
-        btn.textContent = '▶\u00a0Retrieve';
-        return;
+        content.innerHTML=''; actions.innerHTML=''; actions.style.display='none';
+        status.textContent=''; progress.style.width='0%';
+        btn.textContent='▶\u00a0Retrieve'; return;
       }
 
-      btn.disabled = true;
-      btn.textContent = 'Retrieving…';
-      viewer.classList.add('open');
-      content.innerHTML = '';
-      actions.style.display = 'none';
-      progress.style.width = '0%';
-      status.textContent = 'Connecting…';
+      btn.disabled=true; btn.textContent='Retrieving…';
+      viewer.classList.add('open'); content.innerHTML=''; actions.style.display='none';
+      progress.style.width='0%'; status.textContent='';
 
       try {
-        const totalParts  = c.totalParts;
-        const currentPart = c.currentPart;
+        let allHex;
 
-        status.textContent = totalParts > 1
-          ? `Resolving ${totalParts}-part content…`
-          : 'Fetching…';
-
-        const ordered = await buildOrderedAddresses(c.address, totalParts, currentPart);
-
-        let hex = '';
-        for (let p = 0; p < ordered.length; p++) {
-          status.textContent = `Contract ${p + 1} / ${ordered.length}…`;
-          hex += await fetchContractData(ordered[p]);
-          progress.style.width = `${((p + 1) / ordered.length) * 100}%`;
+        if (pipelineMode === 1) {
+          allHex = await retrieveV1(i, c, content, actions, progress);
+        } else if (pipelineMode === 2) {
+          allHex = await retrieveV2(i, c, content, actions, progress);
+        } else if (pipelineMode === 4) {
+          allHex = await retrieveV4(i, c, content, actions, progress);
+        } else {
+          status.textContent = c.totalParts > 1 ? `Resolving ${c.totalParts}-part content…` : 'Fetching…';
+          const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
+          allHex = '';
+          for (let p=0; p<ordered.length; p++) {
+            status.textContent=`Contract ${p+1} / ${ordered.length}…`;
+            allHex += await fetchContractData(ordered[p]);
+            progress.style.width=`${((p+1)/ordered.length)*100}%`;
+          }
+          status.textContent='';
+          progress.style.width='100%';
         }
 
-        status.textContent = '';
-        const bytes = hexToBytes(hex);
-        renderContent(content, actions, bytes, c.mimeType, c.description);
+        const bytes = hexToBytes(allHex);
+        const renderEl = (pipelineMode === 0) ? content : document.createElement('div');
+        if (pipelineMode !== 0) content.appendChild(renderEl);
+        renderContent(renderEl, actions, bytes, c.mimeType, c.description);
 
-        btn.textContent = '▲\u00a0Close';
-        btn.disabled = false;
+        btn.textContent='▲\u00a0Close'; btn.disabled=false;
 
-      } catch (err) {
-        content.innerHTML = `<div class="error-box">Retrieval error: ${esc(err.message)}</div>`;
-        status.textContent = '';
-        btn.textContent = '▶\u00a0Retrieve';
-        btn.disabled = false;
+      } catch(err) {
+        content.innerHTML+=`<div class="error-box">Retrieval error: ${esc(err.message)}</div>`;
+        status.textContent=''; btn.textContent='▶\u00a0Retrieve'; btn.disabled=false;
       }
     }
 
