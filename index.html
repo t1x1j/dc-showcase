@@ -952,6 +952,28 @@
     .mode-desc::before { content: '// '; }
 
     .card-parts { font-family: 'VT323', monospace; font-size: 0.95rem; }
+    .parts-note {
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      margin-left: 3px;
+      user-select: none;
+    }
+    .parts-note:hover { color: var(--accent); }
+    .parts-note.active { color: var(--accent); text-shadow: 0 0 6px rgba(30,255,30,0.6); }
+    .parts-explain {
+      display: none;
+      font-family: 'VT323', monospace;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-left: 2px solid var(--accent);
+      background: #000;
+      line-height: 1.4;
+    }
+    .parts-explain.open { display: block; }
 
     .skeleton { background: #000; border: 1px solid var(--border); animation: none; }
 
@@ -1183,8 +1205,6 @@
         <strong>THIS CONTENT IS PERMANENT.</strong> Each item below is written into the Ethereum state trie — the cryptographically authenticated key-value store that defines global blockchain state. Once finalized, storage slots cannot be deleted or altered without a successful 51% attack. The content does not exist on a server. It exists inside a mathematical structure replicated across thousands of nodes worldwide. <a href="https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/" target="_blank" rel="noopener noreferrer">LEARN ABOUT THE STATE TRIE →</a>
       </div>
     </div>
-
-    <p class="explainer">Each item on this page is stored permanently across one or more Ethereum smart contracts on the Sepolia testnet. When you click Retrieve, the browser connects directly to a public Ethereum node via JSON-RPC, fetches raw hex data chunk by chunk, reassembles it client-side, and renders it. It does not interact with a server, with IPFS, or any other intermediary. Multi-part uploads are reconstructed by following linked contract addresses until all chunks are collected. Once deployed, the content cannot be removed by any single party.</p>
 
     <div class="mode-bar">
       <span class="mode-label">Pipeline Mode</span>
@@ -1567,7 +1587,9 @@
 
     function cardHTML(c, i) {
       const { label, cls } = mimeMeta(c.mimeType);
-      const parts = `${c.totalParts}-contract upload`;
+      const parts = c.totalParts > 1
+        ? `${c.totalParts}-contract upload <span class="parts-note" onclick="this.nextElementSibling.classList.toggle('open');this.classList.toggle('active')">(?) </span><div class="parts-explain">Content too large for one contract — stored across ${c.totalParts} linked contracts and reassembled client-side on retrieval.</div>`
+        : `1-contract upload`;
 
       return `
         <div class="contract-card">
@@ -1627,7 +1649,7 @@
       return ordered;
     }
 
-    let pipelineMode = 0;
+    let pipelineMode = Number(localStorage.getItem('pipelineMode') || 0);
 
     const MODE_DESCS = {
       0: 'Fetches contract data silently and renders the result directly with no pipeline visualization.',
@@ -1636,15 +1658,20 @@
       4: 'Splits the viewer in two. The right side shows a live scrolling hex dump of incoming bytes as each getData call returns. The left side fills row-by-row with noise while data arrives, then snaps to the decoded image or text when assembly is complete.',
     };
 
-    function setMode(m) {
-      if (m === pipelineMode) return;
-      pipelineMode = m;
+    function applyMode(m) {
       [0, 1, 2, 4].forEach(id => {
         const t = document.getElementById(`mode-tab-${id}`);
         if (t) t.classList.toggle('active', id === m);
       });
       const desc = document.getElementById('mode-desc');
       if (desc) desc.textContent = MODE_DESCS[m] || '';
+    }
+
+    function setMode(m) {
+      if (m === pipelineMode) return;
+      pipelineMode = m;
+      localStorage.setItem('pipelineMode', m);
+      applyMode(m);
       contracts.forEach((_, i) => {
         const viewer = document.getElementById(`viewer-${i}`);
         if (!viewer || !viewer.classList.contains('open')) return;
@@ -2015,8 +2042,14 @@
 
         const bytes = hexToBytes(allHex);
 
-        const chunkCount = Math.round(allHex.length / 2 / 850) || 1;
         const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart).catch(() => [c.address]);
+        let realChunkCount = 0;
+        for (const addr of ordered) {
+          try {
+            const dc = new web3.eth.Contract(DATA_ABI, addr);
+            realChunkCount += Number(await dc.methods.getDataCount().call());
+          } catch(e) { realChunkCount += 1; }
+        }
 
         if (ordered.length > 1) {
           const chainViz = buildContractChain(ordered, c.currentPart);
@@ -2028,7 +2061,7 @@
         trieWrap.innerHTML = `<div class="trie-title">Ethereum State Trie — Data Location</div>` + buildTrieSVG(c.address);
         content.appendChild(trieWrap);
 
-        const infoPanel = await buildInfoPanel(c.address, bytes, c.mimeType, chunkCount);
+        const infoPanel = await buildInfoPanel(c.address, bytes, c.mimeType, realChunkCount);
         content.appendChild(infoPanel);
 
         const renderEl = (pipelineMode === 0) ? content : document.createElement('div');
@@ -2193,6 +2226,7 @@
       s.classList.remove('pending');
     }
 
+    applyMode(pipelineMode);
     init();
   </script>
 </body>
