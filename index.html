@@ -1406,7 +1406,6 @@
       const sizeStr = kb >= 1 ? kb.toFixed(1)+' KB' : bytes.length+' B';
       const short = contractAddr.slice(0,10)+'…'+contractAddr.slice(-6);
       const base = 'https://sepolia.etherscan.io/address/';
-      const uid = 'fp-' + Math.random().toString(36).slice(2);
       wrap.innerHTML = `
         <div class="prov-row">
           <div class="prov-label">Contract</div>
@@ -1434,10 +1433,10 @@
         </div>
         <div class="prov-row" style="grid-column:1/-1">
           <div class="prov-label">SHA-256 Fingerprint</div>
-          <div class="prov-val prov-hash" id="${uid}">computing…</div>
+          <div class="prov-val prov-hash">computing…</div>
         </div>`;
       (async () => {
-        const el = document.getElementById(uid);
+        const el = wrap.querySelector('.prov-hash');
         try {
           const buf = await crypto.subtle.digest('SHA-256', bytes);
           const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
