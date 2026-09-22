@@ -882,8 +882,6 @@
     <header>
       <div class="header-inner">
         <div>
-          <div class="logo">On-Chain Retrieval Interface</div>
-          <p class="header-desc">Content stored across the Ethereum state trie. Select a record to begin retrieval via JSON-RPC uplink. All data is read-only.</p>
         </div>
       </div>
     </header>
@@ -934,13 +932,6 @@
       </div>
     </div>
 
-    <div class="immutability-warning">
-      <div class="immutability-icon">⬡</div>
-      <div>
-        <strong>THIS CONTENT IS PERMANENT.</strong> Each item below is written into the Ethereum state trie — the cryptographically authenticated key-value store that defines global blockchain state. Once finalized, storage slots cannot be deleted or altered without a successful 51% attack. The content does not exist on a server. It exists inside a mathematical structure replicated across thousands of nodes worldwide. <a href="https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/" target="_blank" rel="noopener noreferrer">LEARN ABOUT THE STATE TRIE →</a>
-      </div>
-    </div>
-
     <div class="mode-bar">
       <span class="mode-label">Pipeline Mode</span>
       <div class="mode-tabs">
@@ -949,7 +940,7 @@
         <button class="mode-tab" id="mode-tab-2" onclick="setMode(2)">Terminal</button>
         <button class="mode-tab" id="mode-tab-4" onclick="setMode(4)">Hex Dump</button>
       </div>
-      <div class="mode-desc" id="mode-desc">Fetches contract data silently and renders the result directly with no pipeline visualization.</div>
+      <div class="mode-desc" id="mode-desc"></div>
     </div>
 
     <div class="section-label">Registered On-Chain Content</div>
@@ -1382,7 +1373,7 @@
     let pipelineMode = Number(localStorage.getItem('pipelineMode') || 0);
 
     const MODE_DESCS = {
-      0: 'Fetches contract data silently and renders the result directly with no pipeline visualization.',
+      0: '',
       1: 'Shows a 7-stage horizontal pipeline — Browser → JSON-RPC → ETH Node → State Trie → Hex Chunks → Reassembly → Render — where each node lights up as the corresponding RPC call completes and a packet animates along the wire between stages.',
       2: 'Opens a terminal window that prints each RPC call as it happens: connection handshake, getMetadata, getDataCount, then one hex-dump line per getData chunk showing the real first 32 bytes, byte count, and per-call latency.',
       4: 'Splits the viewer in two. The right side shows a live scrolling hex dump of incoming bytes as each getData call returns. The left side fills row-by-row with noise while data arrives, then snaps to the decoded image or text when assembly is complete.',
@@ -1412,7 +1403,7 @@
         document.getElementById(`status-${i}`).textContent = '';
         document.getElementById(`progress-${i}`).style.width = '0%';
         const btn = document.getElementById(`btn-${i}`);
-        btn.textContent = '▶\u00a0Retrieve'; btn.disabled = false;
+        btn.textContent = '▶ Retrieve'; btn.disabled = false;
       });
     }
 
@@ -1736,7 +1727,7 @@
         viewer.classList.remove('open');
         content.innerHTML=''; actions.innerHTML=''; actions.style.display='none';
         status.textContent=''; progress.style.width='0%';
-        btn.textContent='▶\u00a0Retrieve'; return;
+        btn.textContent='▶ Retrieve'; return;
       }
 
       btn.disabled=true; btn.textContent='Retrieving…';
@@ -1798,11 +1789,11 @@
         if (pipelineMode !== 0) content.appendChild(renderEl);
         renderContent(renderEl, actions, bytes, c.mimeType, c.description);
 
-        btn.textContent='▲\u00a0Close'; btn.disabled=false;
+        btn.textContent='▲ Close'; btn.disabled=false;
 
       } catch(err) {
         content.innerHTML+=`<div class="error-box">Retrieval error: ${esc(err.message)}</div>`;
-        status.textContent=''; btn.textContent='▶\u00a0Retrieve'; btn.disabled=false;
+        status.textContent=''; btn.textContent='▶ Retrieve'; btn.disabled=false;
       }
     }
 
