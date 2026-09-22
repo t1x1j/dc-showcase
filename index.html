@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETHEREUM STATE TRIE READER // On-Chain Retrieval</title>
   <script data-goatcounter="https://t1x1j.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -877,6 +878,15 @@
   </style>
 </head>
 <body>
+  <div class="container">
+    <header>
+      <div class="header-inner">
+        <div>
+          <div class="logo">On-Chain Retrieval Interface</div>
+          <p class="header-desc">Content stored across the Ethereum state trie. Select a record to begin retrieval via JSON-RPC uplink. All data is read-only.</p>
+        </div>
+      </div>
+    </header>
 
     <div class="stats-bar">
       <div class="stat">
@@ -924,6 +934,13 @@
       </div>
     </div>
 
+    <div class="immutability-warning">
+      <div class="immutability-icon">⬡</div>
+      <div>
+        <strong>THIS CONTENT IS PERMANENT.</strong> Each item below is written into the Ethereum state trie — the cryptographically authenticated key-value store that defines global blockchain state. Once finalized, storage slots cannot be deleted or altered without a successful 51% attack. The content does not exist on a server. It exists inside a mathematical structure replicated across thousands of nodes worldwide. <a href="https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/" target="_blank" rel="noopener noreferrer">LEARN ABOUT THE STATE TRIE →</a>
+      </div>
+    </div>
+
     <div class="mode-bar">
       <span class="mode-label">Pipeline Mode</span>
       <div class="mode-tabs">
@@ -931,7 +948,9 @@
         <button class="mode-tab" id="mode-tab-1" onclick="setMode(1)">Network Flow</button>
         <button class="mode-tab" id="mode-tab-2" onclick="setMode(2)">Terminal</button>
         <button class="mode-tab" id="mode-tab-4" onclick="setMode(4)">Hex Dump</button>
- 
+      </div>
+      <div class="mode-desc" id="mode-desc">Fetches contract data silently and renders the result directly with no pipeline visualization.</div>
+    </div>
 
     <div class="section-label">Registered On-Chain Content</div>
 
