@@ -2,1958 +2,1093 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ETHEREUM STATE TRIE READER // On-Chain Retrieval</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="A live, read-only interface for retrieving content stored in the Ethereum state trie. Part of the DarkChain research project.">
+  <meta property="og:title" content="DarkChain | On-Chain Retrieval">
+  <meta property="og:description" content="Content stored in Ethereum's state trie, retrieved live and reconstructed in the browser.">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23000'/%3E%3Crect x='7' y='7' width='18' height='18' rx='4' fill='none' stroke='%23f5f5f7' stroke-width='2'/%3E%3Crect x='12' y='12' width='8' height='8' rx='1.5' fill='%23f5f5f7'/%3E%3C/svg%3E">
+  <title>DarkChain | On-Chain Retrieval</title>
   <script data-goatcounter="https://t1x1j.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Inter:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg:            #020302;
-      --surface:       #000;
-      --border:        #0e3517;
-      --border-hover:  #1a5a28;
-      --accent:        #1eff1e;
-      --accent-dim:    rgba(30,255,30,0.06);
-      --accent-border: rgba(30,255,30,0.35);
-      --glow:          rgba(30,255,30,0.7);
-      --glow-soft:     rgba(30,255,30,0.45);
-      --text:          #8ef58e;
-      --text-muted:    #46b452;
-      --text-dim:      #1d6b2b;
-      --red:           #ff5b5b;
-      --yellow:        #ffb000;
-      --blue:          #1eff1e;
-      --purple:        #1eff1e;
-      --mono:          'VT323', 'Share Tech Mono', monospace;
+      --bg: #000000;
+      --s1: #161617;
+      --s2: #1d1d1f;
+      --s3: #2a2a2d;
+      --line: rgba(255,255,255,0.08);
+      --line2: rgba(255,255,255,0.16);
+      --t1: #f5f5f7;
+      --t2: #a1a1a6;
+      --t3: #86868b;
+      --link: #2997ff;
+      --warn: #ff9f0a;
+      --warn-bg: rgba(255,159,10,0.10);
+      --ok: #30d158;
+      --display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+      --text: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", Arial, sans-serif;
+      --mono: "SF Mono", "Geist Mono", ui-monospace, Menlo, Consolas, monospace;
+      --ease: cubic-bezier(.2,.7,.2,1);
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; border-radius: 0 !important; }
-    html { scroll-behavior: smooth; }
-
-    @keyframes crt-on {
-      0%   { opacity: 0; filter: brightness(6) blur(2px); transform: scaleY(0.004); }
-      35%  { opacity: 1; filter: brightness(3) blur(1px); transform: scaleY(0.6); }
-      60%  { filter: brightness(1.6); transform: scaleY(1); }
-      100% { filter: brightness(1); }
-    }
-    @keyframes cursor-blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
-    @keyframes textflicker {
-      0%,100% { text-shadow: 0 0 6px var(--glow); }
-      92%     { text-shadow: 0 0 6px var(--glow); }
-      93%     { text-shadow: none; opacity: 0.9; }
-      94%     { text-shadow: 0 0 6px var(--glow); }
-    }
-    @keyframes raster-drift {
-      0%   { background-position: 0 0; }
-      100% { background-position: 0 3px; }
-    }
-
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: calc(64px + env(safe-area-inset-top, 0px)); -webkit-text-size-adjust: 100%; background: var(--bg); }
     body {
-      background:
-        linear-gradient(rgba(30,255,30,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(30,255,30,0.03) 1px, transparent 1px),
-        var(--bg);
-      background-size: 48px 48px, 48px 48px, auto;
-      background-attachment: fixed;
-      color: var(--text);
-      font-family: var(--mono);
-      font-size: 18px;
-      letter-spacing: 0.04em;
-      min-height: 100vh;
-      overflow-x: hidden;
-      animation: crt-on 0.55s ease-out 1;
+      margin: 0;
+      background: var(--bg);
+      color: var(--t1);
+      font-family: var(--text);
+      font-size: 17px;
+      line-height: 1.47;
+      letter-spacing: -0.011em;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
+    ::selection { background: var(--t1); color: #000; }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; text-underline-offset: 3px; }
+    :focus-visible { outline: 2px solid var(--link); outline-offset: 3px; border-radius: 6px; }
+    code { font-family: var(--mono); font-size: 0.88em; color: var(--t1); }
 
-    body::before {
-      content: '';
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; }
+
+    .nav {
       position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        rgba(0,0,0,0.22) 0px,
-        rgba(0,0,0,0.22) 1px,
-        transparent 1px,
-        transparent 3px
-      );
-      pointer-events: none;
-      z-index: 9998;
-      animation: raster-drift 0.4s steps(2) infinite;
+      top: 0; left: 0; right: 0;
+      z-index: 50;
+      padding-top: env(safe-area-inset-top, 0px);
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--line);
     }
-
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse at center, transparent 58%, rgba(0,0,0,0.42) 100%),
-        linear-gradient(rgba(30,255,30,0.015), rgba(30,255,30,0.015));
-      pointer-events: none;
-      z-index: 9999;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      body, body::before, .logo, .chain-live-dot, .pipeline-timer-dot { animation: none !important; }
-    }
-
-    ::selection { background: var(--accent); color: #000; }
-
-    a { color: var(--accent); }
-    a:focus-visible, button:focus-visible {
-      outline: 1px solid var(--accent);
-      outline-offset: 2px;
-    }
-
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px;
-      position: relative;
-      z-index: 1;
-    }
-
-    header {
-      padding: 36px 0 28px;
-      border-bottom: 1px solid var(--accent);
-      margin-bottom: 36px;
-    }
-
-    .header-inner {
+    .nav-in {
+      height: 52px;
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
       gap: 24px;
-      flex-wrap: wrap;
     }
-
-    .logo {
-      font-family: var(--mono);
-      font-size: 2.3rem;
-      letter-spacing: 0.08em;
-      color: var(--accent);
-      text-shadow: 0 0 14px var(--glow-soft), 0 0 40px rgba(30,255,30,0.2);
-      line-height: 1;
-      margin-bottom: 10px;
-      animation: textflicker 10s infinite;
-      text-transform: uppercase;
-    }
-    .logo::before { content: '> '; color: var(--text-muted); }
-    .header-desc {
-      font-size: 1.1rem;
-      color: var(--text-muted);
-      max-width: 540px;
-      line-height: 1.55;
-      text-shadow: 0 0 4px rgba(30,255,30,0.35);
-    }
-    .header-desc::before { content: '// '; color: var(--text-dim); }
-
-    .stats-bar {
-      display: flex;
-      margin-bottom: 30px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-
-    .stat {
-      flex: 1;
-      padding: 12px 18px;
-      border-right: 1px solid var(--border);
-    }
-    .stat:last-child { border-right: none; }
-
-    .stat-label {
-      font-size: 0.85rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      margin-bottom: 3px;
-    }
-    .stat-label::before { content: '['; }
-    .stat-label::after  { content: ']'; }
-
-    .stat-value {
-      font-size: 1.1rem;
-      color: var(--text);
-      text-shadow: 0 0 6px var(--glow);
-    }
-    .stat-value.pending { color: var(--text-dim); text-shadow: none; }
-    .stat-value.accent  { color: var(--accent); }
-
-    .chain-live-bar {
-      display: flex;
-      align-items: stretch;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      margin-bottom: 16px;
-      overflow: hidden;
-    }
-    .chain-live-stat {
-      flex: 1;
-      padding: 7px 14px;
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-    .chain-live-stat:last-child { border-right: none; }
-    .chain-live-label {
-      color: var(--text-dim);
-      font-size: 0.78rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .chain-live-label::before { content: '// '; }
-    .chain-live-val {
-      color: var(--accent);
-      font-size: 1.05rem;
-      text-shadow: 0 0 6px var(--glow-soft);
-    }
-    .chain-live-val.dim { color: var(--text-muted); text-shadow: none; }
-    .chain-live-dot {
-      display: inline-block;
-      width: 6px; height: 6px;
-      background: var(--accent);
-      margin-right: 4px;
-      vertical-align: middle;
-      animation: cursor-blink 1s step-end infinite;
-    }
-
-    .immutability-warning {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--yellow);
-      padding: 12px 14px;
-      margin-bottom: 20px;
-      font-size: 1rem;
-      line-height: 1.5;
-      color: var(--text-muted);
-    }
-    .immutability-icon {
-      font-size: 1.2rem;
-      flex-shrink: 0;
-      color: var(--yellow);
-      text-shadow: 0 0 8px rgba(255,176,0,0.5);
-    }
-    .immutability-warning strong {
-      color: var(--yellow);
-      letter-spacing: 0.06em;
-      text-shadow: 0 0 6px rgba(255,176,0,0.4);
-    }
-    .immutability-warning a { text-decoration: none; }
-    .immutability-warning a:hover { text-decoration: underline; }
-
-    .mode-bar {
+    .brand {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+      color: var(--t1);
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 26px;
-      flex-wrap: wrap;
-    }
-    .mode-label {
-      font-size: 1rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      flex-shrink: 0;
-    }
-    .mode-tabs {
-      display: flex;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-    }
-    .mode-tab {
-      padding: 6px 16px;
-      font-family: var(--mono);
-      font-size: 1rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      background: transparent;
-      border: none;
-      border-right: 1px solid var(--border);
-      cursor: pointer;
-      transition: color 0.12s, background 0.12s;
-    }
-    .mode-tab:last-child { border-right: none; }
-    .mode-tab:hover:not(.active) { color: var(--text-muted); background: rgba(30,255,30,0.03); }
-    .mode-tab.active {
-      color: var(--accent);
-      background: var(--accent-dim);
-      text-shadow: 0 0 6px var(--glow);
-    }
-    .mode-tab.active::before { content: '> '; }
-    .mode-desc {
-      width: 100%;
-      font-size: 0.95rem;
-      color: var(--text-dim);
-      line-height: 1.5;
-      border-left: 1px solid var(--border);
-      padding: 2px 0 2px 10px;
-    }
-    .mode-desc::before { content: '// '; }
-
-    .section-label {
-      font-size: 1.05rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: var(--accent);
-      text-shadow: 0 0 6px var(--glow);
-      margin-bottom: 16px;
-      white-space: nowrap;
-      overflow: hidden;
-    }
-    .section-label::before { content: '╔══ '; color: var(--text-dim); text-shadow: none; }
-    .section-label::after  {
-      content: ' ══════════════════════════════════════════════════════════════════';
-      color: var(--text-dim);
-      text-shadow: none;
-    }
-
-    .explainer {
-      font-size: 1.05rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-      margin-bottom: 26px;
-      max-width: 860px;
-    }
-
-    .contracts-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(560px, 1fr));
-      align-items: start;
-      gap: 16px;
-      margin-bottom: 64px;
-    }
-
-    .contract-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      position: relative;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .contract-card:hover {
-      border-color: var(--accent);
-      box-shadow: 0 0 16px rgba(30,255,30,0.1), inset 0 0 24px rgba(30,255,30,0.02);
-    }
-    .contract-card::before {
-      content: '┌─';
-      position: absolute;
-      top: -2px; left: 2px;
-      color: var(--text-dim);
-      font-size: 0.8rem;
-      line-height: 1;
-      pointer-events: none;
-    }
-
-    .card-header {
-      padding: 12px 18px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
       gap: 10px;
     }
-
-    .card-title {
-      font-size: 1.15rem;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--accent);
-      text-shadow: 0 0 6px var(--glow-soft);
-      flex: 1;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .brand-mark {
+      width: 18px; height: 18px;
+      border: 1.5px solid var(--t1);
+      border-radius: 5px;
+      position: relative;
     }
-
-    .mime-badge {
-      font-size: 0.85rem;
-      padding: 2px 9px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      white-space: nowrap;
-      flex-shrink: 0;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--accent);
+    .brand-mark::after {
+      content: '';
+      position: absolute;
+      inset: 4px;
+      background: var(--t1);
+      border-radius: 1.5px;
     }
-    .mime-text, .mime-image, .mime-json, .mime-default {
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--accent);
+    .nav-links { display: flex; gap: 28px; font-size: 13px; }
+    .nav-links a { color: var(--t2); }
+    .nav-links a:hover { color: var(--t1); text-decoration: none; }
+    .nav-net { font-size: 13px; color: var(--t2); }
+
+    .hero {
+      padding: 148px 0 96px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      align-items: center;
     }
-
-    .card-body { padding: 12px 18px; }
-
-    .card-address {
-      font-size: 0.95rem;
-      color: var(--text-dim);
-      margin-bottom: 12px;
-      word-break: break-all;
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 700;
+      font-size: clamp(46px, 7.2vw, 92px);
+      line-height: 0.98;
+      letter-spacing: -0.045em;
+      margin: 0;
+      color: var(--t1);
     }
-    .card-address .addr-label { color: var(--text-muted); margin-right: 4px; }
-    .addr-label::before { content: '>> '; }
+    .hero-sub {
+      margin: 28px 0 0;
+      font-size: 21px;
+      line-height: 1.42;
+      letter-spacing: -0.016em;
+      color: var(--t2);
+      max-width: 30em;
+      font-weight: 400;
+    }
+    .cta { display: flex; align-items: center; gap: 26px; margin-top: 38px; flex-wrap: wrap; }
+    .pill {
+      appearance: none;
+      border: none;
+      cursor: pointer;
+      font-family: var(--text);
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      padding: 11px 22px;
+      border-radius: 999px;
+      background: var(--t1);
+      color: #000;
+      transition: background .2s var(--ease), transform .2s var(--ease);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .pill:hover { background: #ffffff; text-decoration: none; }
+    .pill:active { transform: scale(0.98); }
+    .pill:disabled { opacity: .55; cursor: progress; }
+    .pill.ghost { background: transparent; color: var(--t1); box-shadow: inset 0 0 0 1px var(--line2); }
+    .pill.ghost:hover { background: rgba(255,255,255,0.06); }
+    .textlink { font-size: 17px; color: var(--link); }
 
-    .card-footer {
+    .hero-art { position: relative; width: 100%; aspect-ratio: 640 / 540; }
+    .hero-art svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .ht-edge { fill: none; stroke: rgba(255,255,255,0.13); stroke-width: 1; }
+    .ht-node { fill: #3a3a3d; }
+    .ht-path { fill: none; stroke: var(--t1); stroke-width: 1.6; }
+    .ht-pnode { fill: var(--t1); }
+    .ht-leaf { fill: var(--warn); }
+    .ht-ring { fill: none; stroke: var(--warn); stroke-width: 1; opacity: .5; }
+    .ht-lab { font-family: var(--mono); font-size: 15px; fill: var(--t2); }
+    .ht-lab.hi { fill: var(--warn); }
+    .ht-tick { stroke: rgba(255,255,255,0.25); stroke-width: 1; stroke-dasharray: 2 3; }
+    .draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 1.1s var(--ease) forwards; animation-delay: var(--d, 0s); }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    .fade { opacity: 0; animation: fade .6s var(--ease) forwards; animation-delay: var(--d, 0s); }
+    @keyframes fade { to { opacity: 1; } }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      padding: 44px 0 0;
+      border-top: 1px solid var(--line);
+    }
+    .stat-n {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: clamp(34px, 4.4vw, 54px);
+      letter-spacing: -0.035em;
+      line-height: 1;
+      color: var(--t1);
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-n.wait { color: var(--t3); }
+    .stat-c { margin-top: 10px; font-size: 14px; color: var(--t2); line-height: 1.4; }
+
+    .block { padding: 140px 0 0; }
+    .h2 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: clamp(36px, 5vw, 56px);
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      margin: 0;
+      max-width: 16ch;
+    }
+    .lede { font-size: 21px; line-height: 1.42; color: var(--t2); max-width: 34em; margin: 22px 0 0; letter-spacing: -0.016em; }
+
+    .perm {
+      margin-top: 120px;
+      border-radius: 28px;
+      background: var(--s1);
+      padding: 64px;
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 56px;
+      align-items: start;
+    }
+    .perm h3 {
+      font-family: var(--display);
+      font-weight: 600;
+      font-size: clamp(32px, 4vw, 48px);
+      line-height: 1.04;
+      letter-spacing: -0.035em;
+      margin: 0;
+      position: relative;
+    }
+    .perm p { margin: 0; font-size: 19px; line-height: 1.5; color: var(--t2); letter-spacing: -0.014em; }
+    .perm p + p { margin-top: 18px; }
+    .perm a { display: inline-block; margin-top: 22px; font-size: 17px; }
+
+    .bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin: 56px 0 14px;
     }
-
-    .card-parts { font-size: 0.95rem; color: var(--text-dim); }
-
-    .parts-note {
-      cursor: pointer;
-      color: var(--text-dim);
-      font-size: 0.85rem;
-      margin-left: 3px;
-      user-select: none;
-    }
-    .parts-note:hover { color: var(--accent); }
-    .parts-note.active { color: var(--accent); text-shadow: 0 0 6px var(--glow-soft); }
-    .parts-explain {
-      display: none;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-top: 4px;
-      padding: 5px 8px;
-      border: 1px solid var(--border);
-      border-left: 2px solid var(--accent);
-      background: var(--surface);
-      line-height: 1.4;
-    }
-    .parts-explain.open { display: block; }
-
-    .retrieve-btn {
+    .seg {
       display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 6px 16px;
-      background: var(--surface);
-      border: 1px solid var(--accent);
-      color: var(--accent);
-      font-family: var(--mono);
-      font-size: 1rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      text-shadow: 0 0 6px var(--glow);
+      background: var(--s1);
+      border-radius: 999px;
+      padding: 3px;
+      gap: 2px;
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+    .seg button {
+      appearance: none;
+      border: none;
+      background: transparent;
+      color: var(--t2);
+      font-family: var(--text);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 7px 18px;
+      border-radius: 999px;
       cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s;
+      transition: color .2s var(--ease), background .2s var(--ease);
     }
-    .retrieve-btn::before { content: '> '; }
-    .retrieve-btn:hover:not(:disabled) {
-      background: rgba(30,255,30,0.08);
-      box-shadow: 0 0 14px rgba(30,255,30,0.25), inset 0 0 10px rgba(30,255,30,0.06);
-    }
-    .retrieve-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .seg button:hover:not(.on) { color: var(--t1); }
+    .seg button.on { background: var(--s3); color: var(--t1); box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+    .count { font-family: var(--mono); font-size: 13px; color: var(--t3); }
+    .mode-explain { font-size: 15px; color: var(--t2); max-width: 46em; margin: 0 0 32px; min-height: 2.9em; line-height: 1.45; }
 
-    .content-viewer {
-      display: none;
-      border-top: 1px solid var(--border);
-      padding: 16px 18px;
+    .records { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .record {
+      background: var(--s1);
+      border-radius: 22px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      box-shadow: inset 0 0 0 1px transparent;
+      transition: box-shadow .25s var(--ease);
     }
-    .content-viewer.open { display: block; }
+    .record:hover { box-shadow: inset 0 0 0 1px var(--line2); }
+    .record.wide { grid-column: 1 / -1; }
+    .rec-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .rec-title {
+      font-family: var(--display);
+      font-size: 24px;
+      font-weight: 600;
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      overflow-wrap: anywhere;
+      min-width: 0;
+    }
+    .rec-type {
+      flex-shrink: 0;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--t2);
+      background: var(--s3);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .rec-meta { margin: 22px 0 28px; display: grid; gap: 8px; }
+    .rec-row { display: grid; grid-template-columns: 72px 1fr; gap: 12px; font-size: 13px; align-items: baseline; }
+    .rec-row .k { color: var(--t3); }
+    .rec-row .v { font-family: var(--mono); color: var(--t2); overflow-wrap: anywhere; min-width: 0; }
+    .rec-row .v a { color: var(--t2); }
+    .rec-row .v a:hover { color: var(--t1); }
+    .why { appearance: none; border: none; background: none; color: var(--link); font-size: 13px; cursor: pointer; padding: 0 0 0 6px; font-family: var(--text); }
+    .why-ex { display: none; color: var(--t2); font-family: var(--text); font-size: 13px; line-height: 1.5; margin-top: 6px; }
+    .why-ex.open { display: block; }
+    .rec-foot { margin-top: auto; }
 
-    .progress-bar {
-      height: 3px;
-      background: var(--border);
-      margin-bottom: 14px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%;
-      background: var(--accent);
-      width: 0%;
-      transition: width 0.25s ease;
-      box-shadow: 0 0 8px var(--glow);
-    }
+    .viewer { display: none; margin-top: 28px; }
+    .viewer.open { display: block; }
+    .track { height: 3px; background: var(--s3); border-radius: 3px; overflow: hidden; margin-bottom: 18px; }
+    .track-fill { height: 100%; width: 0%; background: var(--t1); border-radius: 3px; transition: width .3s var(--ease); }
+    .vstatus { font-family: var(--mono); font-size: 12.5px; color: var(--t2); margin-bottom: 12px; }
+    .vstatus:empty { display: none; }
 
-    .content-status {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-    .content-status::before { content: '> '; }
-    .content-status:empty { display: none; }
+    .panel { background: var(--s2); border-radius: 16px; padding: 20px; margin-bottom: 12px; }
+    .panel-cap { font-size: 13px; color: var(--t3); margin-bottom: 14px; }
 
     .content-text {
-      font-size: 1rem;
       font-family: var(--mono);
-      line-height: 1.55;
-      color: var(--accent);
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: var(--surface);
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      max-height: 360px;
-      overflow-y: auto;
-    }
-
-    .content-image {
-      max-width: 100%;
-      max-height: 360px;
-      display: block;
-      border: 1px solid var(--border);
-      image-rendering: auto;
-    }
-
-    .content-actions {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 5px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      font-family: var(--mono);
-      font-size: 0.95rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-    .size-label {
-      margin-left: auto;
-      font-size: 0.9rem;
-      color: var(--text-dim);
-    }
-
-    .error-box {
-      font-size: 1rem;
-      color: var(--red);
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 1px solid var(--red);
-      text-shadow: 0 0 6px rgba(255,91,91,0.4);
-    }
-    .error-box::before { content: '!! '; }
-
-    .skeleton {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-    }
-    .skeleton::after {
-      content: 'AWAITING UPLINK ▒▒▒';
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-dim);
-      font-size: 1rem;
-      letter-spacing: 0.2em;
-      animation: cursor-blink 1.2s step-end infinite;
-    }
-    .skeleton-card { height: 148px; }
-
-    .empty-state {
-      grid-column: 1 / -1;
-      padding: 72px 24px;
-      text-align: center;
-      border: 1px dashed var(--border);
-    }
-    .empty-state-title {
-      font-size: 1.2rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-    .empty-state-desc {
-      font-size: 0.95rem;
-      color: var(--text-dim);
+      font-size: 13px;
       line-height: 1.6;
+      color: var(--t1);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: var(--s2);
+      border-radius: 16px;
+      padding: 18px 20px;
+      margin: 0;
+      max-height: 420px;
+      overflow: auto;
     }
+    .content-image { display: block; max-width: 100%; max-height: 460px; border-radius: 16px; background: var(--s2); }
+    .content-iframe { width: 100%; aspect-ratio: 16/9; border: none; border-radius: 16px; background: var(--s2); }
+    .iframe-blocked { display: none; font-size: 14px; color: var(--t2); margin-top: 10px; padding: 14px 16px; background: var(--s2); border-radius: 12px; }
+    .content-link { display: inline-block; margin-top: 10px; font-family: var(--mono); font-size: 13px; overflow-wrap: anywhere; }
 
-    footer {
-      border-top: 1px solid var(--accent);
-      padding: 22px 0 32px;
+    .actions { display: none; align-items: center; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .act {
+      appearance: none; border: none; cursor: pointer;
+      font-family: var(--text); font-size: 14px; font-weight: 500;
+      color: var(--t1); background: var(--s3);
+      padding: 8px 16px; border-radius: 999px;
+      transition: background .2s var(--ease);
     }
-    .footer-inner {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-    .footer-text {
-      font-size: 0.95rem;
-      color: var(--text-dim);
-      line-height: 1.8;
-    }
-    .footer-text a {
-      text-decoration: none;
-      text-shadow: 0 0 6px var(--glow-soft);
-    }
-    .footer-text a:hover { text-decoration: underline; }
+    .act:hover { background: #38383b; }
+    .act-size { margin-left: auto; font-family: var(--mono); font-size: 12.5px; color: var(--t3); }
+    .err { font-family: var(--mono); font-size: 13px; color: var(--warn); background: var(--warn-bg); border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
 
-    .content-iframe {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      border: 1px solid var(--border);
-      background: #000;
-    }
-    .iframe-blocked-notice {
-      display: none;
-      font-size: 1rem;
-      color: var(--text-dim);
-      margin-top: 6px;
-      padding: 6px 10px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-    }
-    .content-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.95rem;
-      color: var(--accent);
-      text-decoration: none;
-      word-break: break-all;
-      line-height: 1.5;
-      margin-top: 6px;
-    }
-    .content-link:hover { text-decoration: underline; }
+    .prov { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
+    .prov-c { background: var(--s2); padding: 16px 18px; min-width: 0; }
+    .prov-c.full { grid-column: 1 / -1; }
+    .prov-k { font-size: 12px; color: var(--t3); margin-bottom: 6px; }
+    .prov-v { font-family: var(--mono); font-size: 13.5px; color: var(--t1); overflow-wrap: anywhere; }
+    .prov-v .mut { color: var(--t3); }
+    .prov-hash { font-size: 12px; color: var(--t2); line-height: 1.5; }
 
-    .pipeline-flow {
-      margin-bottom: 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 18px 14px 14px;
-      overflow: hidden;
-    }
-    .pf-svg { display: block; width: 100%; overflow: visible; }
-    .pf-log {
-      font-size: 0.95rem;
-      color: var(--text-dim);
-      margin-top: 10px;
-      min-height: 20px;
-      letter-spacing: 0.04em;
-      transition: color 0.2s;
-    }
-    .pf-log.active { color: var(--accent); text-shadow: 0 0 6px var(--glow-soft); }
+    .trie-svg { display: block; width: 100%; max-width: 760px; height: auto; overflow: visible; }
+    .tn { fill: var(--s3); stroke: none; }
+    .tn.hi { fill: var(--warn-bg); stroke: var(--warn); stroke-width: 1; }
+    .tl { font-family: var(--display); font-size: 14px; font-weight: 600; fill: var(--t1); letter-spacing: -0.01em; }
+    .tl.hi { fill: var(--warn); }
+    .ts { font-family: var(--mono); font-size: 11px; fill: var(--t2); }
+    .te { stroke: var(--t3); stroke-width: 1; fill: none; }
 
-    .pipeline-terminal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      margin-bottom: 12px;
-    }
-    .pipeline-terminal-bar {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 6px 10px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    .ptb-dot { width: 8px; height: 8px; border: 1px solid var(--border); }
-    .ptb-dot.r { background: #2a0a0a; }
-    .ptb-dot.y { background: #2a2200; }
-    .ptb-dot.g { background: #082a10; }
-    .ptb-label { font-size: 0.9rem; color: var(--text-dim); letter-spacing: 0.08em; margin-left: 6px; }
-    .pipeline-terminal-out {
-      padding: 0.7rem 0.9rem 1rem;
-      font-size: 1rem;
-      line-height: 1.5;
-      max-height: 260px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-    }
-    .pipeline-terminal-out::-webkit-scrollbar { width: 3px; }
-    .pipeline-terminal-out::-webkit-scrollbar-thumb { background: var(--border-hover); }
-    .pt-line { display: flex; gap: 0.4rem; margin-bottom: 1px; word-break: break-all; }
-    .pt-prompt { color: var(--text-dim); flex-shrink: 0; }
-    .pt-key { color: var(--text); }
-    .pt-val { color: var(--accent); text-shadow: 0 0 4px var(--glow-soft); }
-    .pt-hex { color: var(--text-muted); letter-spacing: 0.03em; }
-    .pt-comment { color: var(--text-dim); }
-    .pt-warn { color: var(--yellow); }
-    .pt-success { color: var(--accent); text-shadow: 0 0 6px var(--glow); }
-    .pt-dim { color: var(--text-dim); opacity: 0.6; }
+    .chainrow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .cnode { background: var(--s3); border-radius: 10px; padding: 8px 12px; min-width: 100px; }
+    .cnode.on { box-shadow: inset 0 0 0 1px var(--t1); }
+    .cnode .r { font-size: 11px; color: var(--t3); }
+    .cnode .a { font-family: var(--mono); font-size: 12px; color: var(--t2); }
+    .cnode.on .a { color: var(--t1); }
+    .carr { color: var(--t3); }
 
-    .hex-split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      overflow: hidden;
-      margin-bottom: 12px;
-      height: 260px;
-    }
-    .hex-left {
-      border-right: 1px solid var(--border);
-      position: relative;
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: var(--surface);
-    }
-    .hex-left-label {
-      position: absolute;
-      top: 6px; left: 8px;
-      font-size: 0.8rem;
-      color: var(--text-dim);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    .hex-left canvas { display: block; max-width: 100%; max-height: 100%; }
-    .hex-left-text {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      padding: 8px;
-      word-break: break-all;
-      line-height: 1.45;
-      max-height: 100%;
-      overflow: hidden;
-    }
-    .hex-left-waiting { font-size: 0.9rem; color: var(--text-dim); }
-    .hex-right {
-      background: var(--surface);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .hex-right-bar {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 8px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .hrb-dot { width: 7px; height: 7px; border: 1px solid var(--border); }
-    .hrb-dot.r{background:#1a0606;} .hrb-dot.y{background:#1a1600;} .hrb-dot.g{background:#061a0c;}
-    .hrb-label { font-size: 0.85rem; color: var(--text-dim); margin-left: 4px; }
-    .hex-right-out {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0.4rem 0.6rem;
-      font-size: 0.9rem;
-      line-height: 1.45;
-      scrollbar-width: thin;
-    }
-    .hex-right-out::-webkit-scrollbar { width: 2px; }
-    .hex-right-out::-webkit-scrollbar-thumb { background: var(--border-hover); }
-    .hr-line { white-space: nowrap; margin-bottom: 1px; }
-    .hr-addr { color: var(--text-dim); }
-    .hr-bytes { color: var(--text-muted); }
-    .hr-hi { color: var(--accent); text-shadow: 0 0 4px var(--glow-soft); }
-    .hr-sep { color: var(--border); }
-    .hr-ascii { color: var(--text-dim); }
+    .timer { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); font-size: 12px; color: var(--t3); margin-top: 14px; }
+    .timer .v { color: var(--t2); font-variant-numeric: tabular-nums; min-width: 62px; }
+    .timer.done .v { color: var(--t1); }
 
-    .pipeline-timer {
-      font-size: 1rem;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-top: 8px;
-      letter-spacing: 0.06em;
-    }
-    .pipeline-timer-val {
-      color: var(--accent);
-      letter-spacing: 0.04em;
-      min-width: 60px;
-      text-shadow: 0 0 6px var(--glow);
-    }
-    .pipeline-timer-dot {
-      width: 6px; height: 6px;
-      background: var(--accent);
-      animation: cursor-blink 0.7s step-end infinite;
-      flex-shrink: 0;
-    }
-    .pipeline-timer-dot.done { animation: none; opacity: 0.4; }
+    .trace-svg { display: block; width: 100%; overflow: visible; }
+    .trace-log { font-family: var(--mono); font-size: 12.5px; color: var(--t1); margin-top: 16px; min-height: 18px; }
 
-    .provenance-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      margin-bottom: 8px;
-      font-size: 0.95rem;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px 20px;
-    }
-    .prov-row { display: flex; flex-direction: column; gap: 1px; }
-    .prov-label {
-      color: var(--text-dim);
-      font-size: 0.78rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-    }
-    .prov-label::before { content: '> '; }
-    .prov-val { color: var(--text-muted); word-break: break-all; }
-    .prov-val.accent { color: var(--accent); text-shadow: 0 0 6px var(--glow-soft); }
-    .prov-val a { text-decoration: none; }
-    .prov-val a:hover { text-decoration: underline; }
-    .prov-hash { font-size: 0.85rem; word-break: break-all; }
+    .logbox { background: var(--s2); border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
+    .logbox-bar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--t3); display: flex; gap: 10px; align-items: center; }
+    .logbox-bar b { color: var(--t1); font-weight: 500; }
+    .logbox-out { padding: 12px 16px 16px; font-family: var(--mono); font-size: 12px; line-height: 1.6; max-height: 300px; overflow: auto; color: var(--t2); }
+    .ll { display: flex; gap: 8px; overflow-wrap: anywhere; }
+    .ll .pre { color: var(--t3); flex-shrink: 0; }
+    .lk { color: var(--t1); font-weight: 500; }
+    .lv { color: var(--link); }
+    .lc { color: var(--t3); }
+    .lhex { color: var(--t2); }
+    .lok { color: var(--ok); font-weight: 500; }
+    .ldim { color: var(--t3); opacity: .75; }
 
-    .trie-diagram {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 12px;
-      margin-bottom: 8px;
-    }
-    .trie-title {
-      font-size: 0.95rem;
-      color: var(--text-dim);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-    .trie-title::before { content: '// '; }
-    .trie-svg { display: block; width: 100%; }
+    .bytes { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: 16px; overflow: hidden; height: 300px; margin-bottom: 12px; }
+    .bytes-l { background: var(--s2); position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 12px; }
+    .bytes-cap { position: absolute; top: 12px; left: 16px; font-size: 12px; color: var(--t3); }
+    .bytes-l canvas { max-width: 100%; max-height: 100%; display: block; border-radius: 8px; }
+    .bytes-txt { font-family: var(--mono); font-size: 12px; color: var(--t2); overflow-wrap: anywhere; line-height: 1.55; max-height: 100%; overflow: hidden; align-self: flex-start; margin-top: 28px; }
+    .bytes-wait { font-family: var(--mono); font-size: 12px; color: var(--t3); }
+    .bytes-r { background: var(--s2); display: flex; flex-direction: column; min-width: 0; }
+    .bytes-bar { padding: 10px 16px; border-bottom: 1px solid var(--line); font-family: var(--mono); font-size: 12px; color: var(--t3); }
+    .bytes-out { flex: 1; overflow: auto; padding: 10px 14px; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; }
+    .hrl { white-space: nowrap; }
+    .hr-a { color: var(--t3); }
+    .hr-b { color: var(--t2); }
+    .hr-hi { color: var(--warn); }
+    .hr-s { color: var(--s3); }
+    .hr-x { color: var(--t3); }
 
-    .contract-chain {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 10px 12px;
-      margin-bottom: 8px;
-      font-size: 0.95rem;
+    .skel { background: var(--s1); border-radius: 22px; min-height: 210px; position: relative; overflow: hidden; }
+    .skel::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%);
+      background-size: 200% 100%;
+      animation: sheen 1.6s linear infinite;
     }
-    .chain-title {
-      color: var(--text-dim);
-      font-size: 0.78rem;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      margin-bottom: 6px;
-    }
-    .chain-title::before { content: '> '; }
-    .chain-nodes { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .chain-node {
-      padding: 4px 8px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-    }
-    .chain-node.active { border-color: var(--accent); box-shadow: 0 0 8px rgba(30,255,30,0.15); }
-    .chain-node-role { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
-    .chain-node-addr { color: var(--text-muted); font-size: 0.9rem; }
-    .chain-node.active .chain-node-addr { color: var(--accent); text-shadow: 0 0 6px var(--glow-soft); }
-    .chain-arrow { color: var(--text-dim); font-size: 1rem; }
+    @keyframes sheen { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+    .empty { grid-column: 1 / -1; background: var(--s1); border-radius: 22px; padding: 72px 28px; text-align: center; }
+    .empty h3 { font-family: var(--display); font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 10px; }
+    .empty p { margin: 0 auto; max-width: 44ch; color: var(--t2); font-size: 15px; }
 
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: var(--surface); }
-    ::-webkit-scrollbar-thumb { background: var(--border-hover); }
-    ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 64px; }
+    .step { border-top: 1px solid var(--line2); padding-top: 24px; }
+    .step-n { font-family: var(--display); font-size: 15px; font-weight: 600; color: var(--t3); margin-bottom: 40px; font-variant-numeric: tabular-nums; }
+    .step h4 { font-family: var(--display); font-size: 21px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 10px; }
+    .step p { margin: 0; color: var(--t2); font-size: 15px; line-height: 1.5; }
 
-    @media (max-width: 640px) {
-      .header-inner { flex-direction: column; }
-      .stats-bar { flex-wrap: wrap; }
-      .stat { border-right: none; border-bottom: 1px solid var(--border); flex-basis: 45%; }
-      .stat:last-child { border-bottom: none; }
-      .chain-live-bar { flex-wrap: wrap; }
-      .chain-live-stat { flex-basis: 45%; border-bottom: 1px solid var(--border); }
-      .contracts-grid { grid-template-columns: 1fr; }
-      .footer-inner { flex-direction: column; }
-      .section-label::after { content: ' ════════════'; }
+    footer { margin-top: 140px; border-top: 1px solid var(--line); padding: 26px 0 56px; }
+    .foot { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; font-size: 12px; color: var(--t3); line-height: 1.6; }
+    .foot p { margin: 0; max-width: 62ch; }
+    .foot a { color: var(--t2); }
+    .foot-r { display: flex; gap: 22px; }
+    .foot-r a { display: inline-flex; align-items: center; gap: 6px; }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; padding-top: 120px; gap: 56px; }
+      .hero-art { max-width: 560px; }
+      .perm { grid-template-columns: 1fr; padding: 40px 28px; gap: 28px; }
+      .prov { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 760px) {
+      .wrap { padding: 0 20px; }
+      .nav-links { display: none; }
+      .stats { grid-template-columns: 1fr 1fr; gap: 36px 20px; }
+      .records, .steps { grid-template-columns: 1fr; }
+      .record { padding: 24px; }
+      .block { padding-top: 104px; }
+      .perm { margin-top: 96px; }
+      .prov, .bytes { grid-template-columns: 1fr; }
+      .bytes { height: auto; }
+      .bytes-l { min-height: 200px; }
+      .hero-sub, .lede { font-size: 19px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+      .draw { stroke-dashoffset: 0 !important; }
+      .fade { opacity: 1 !important; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="header-inner">
-        <div>
-          <div class="logo">On-Chain Retrieval Interface</div>
-          <p class="header-desc">Content stored across the Ethereum state trie. Select a record to begin retrieval via JSON-RPC uplink. All data is read-only.</p>
-        </div>
+  <nav class="nav">
+    <div class="wrap nav-in">
+      <div class="brand"><span class="brand-mark"></span>DarkChain</div>
+      <div class="nav-links">
+        <a href="#records">Records</a>
+        <a href="#permanence">Permanence</a>
+        <a href="#method">Method</a>
       </div>
-    </header>
-
-    <div class="stats-bar">
-      <div class="stat">
-        <div class="stat-label">Registered Contracts</div>
-        <div class="stat-value accent pending" id="stat-count">—</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Network</div>
-        <div class="stat-value">Ethereum Sepolia</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Retrieval Method</div>
-        <div class="stat-value">JSON-RPC</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Storage Layer</div>
-        <div class="stat-value">State Trie</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Interface</div>
-        <div class="stat-value">Read-Only</div>
-      </div>
+      <div class="nav-net">Sepolia testnet</div>
     </div>
+  </nav>
 
-    <div class="chain-live-bar">
-      <div class="chain-live-stat">
-        <div class="chain-live-label"><span class="chain-live-dot"></span>Block</div>
-        <div class="chain-live-val" id="live-block">—</div>
-      </div>
-      <div class="chain-live-stat">
-        <div class="chain-live-label">Block Time</div>
-        <div class="chain-live-val dim">~12s</div>
-      </div>
-      <div class="chain-live-stat">
-        <div class="chain-live-label">Chain ID</div>
-        <div class="chain-live-val dim">11155111</div>
-      </div>
-      <div class="chain-live-stat">
-        <div class="chain-live-label">Data Contracts</div>
-        <div class="chain-live-val" id="live-contracts">—</div>
-      </div>
-      <div class="chain-live-stat">
-        <div class="chain-live-label">Retrieval Cost</div>
-        <div class="chain-live-val dim">$0.00 (read-only)</div>
-      </div>
-    </div>
-
-    <div class="immutability-warning">
-      <div class="immutability-icon">⬡</div>
+  <main class="wrap">
+    <section class="hero">
       <div>
-        <strong>THIS CONTENT IS PERMANENT.</strong> Each item below is written into the Ethereum state trie — the cryptographically authenticated key-value store that defines global blockchain state. Once finalized, storage slots cannot be deleted or altered without a successful 51% attack. The content does not exist on a server. It exists inside a mathematical structure replicated across thousands of nodes worldwide. <a href="https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/" target="_blank" rel="noopener noreferrer">LEARN ABOUT THE STATE TRIE →</a>
-      </div>
-    </div>
-
-    <div class="mode-bar">
-      <span class="mode-label">Pipeline Mode</span>
-      <div class="mode-tabs">
-        <button class="mode-tab active" id="mode-tab-0" onclick="setMode(0)">Original</button>
-        <button class="mode-tab" id="mode-tab-1" onclick="setMode(1)">Network Flow</button>
-        <button class="mode-tab" id="mode-tab-2" onclick="setMode(2)">Terminal</button>
-        <button class="mode-tab" id="mode-tab-4" onclick="setMode(4)">Hex Dump</button>
-      </div>
-      <div class="mode-desc" id="mode-desc">Fetches contract data silently and renders the result directly with no pipeline visualization.</div>
-    </div>
-
-    <div class="section-label">Registered On-Chain Content</div>
-
-    <div class="contracts-grid" id="contracts-grid">
-      <div class="skeleton skeleton-card"></div>
-      <div class="skeleton skeleton-card"></div>
-      <div class="skeleton skeleton-card"></div>
-      <div class="skeleton skeleton-card"></div>
-    </div>
-
-    <footer>
-      <div class="footer-inner">
-        <div class="footer-text">
-          Created by <a href="https://github.com/t1x1j" target="_blank" rel="noopener noreferrer">t1x1j</a>
-          &nbsp;·&nbsp;
-          Find me on X!
-          &nbsp;<a href="https://x.com/0xt1x1j" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-bottom:2px"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          </a>
+        <h1>Stored in the state trie. Impossible to delete.</h1>
+        <p class="hero-sub">Every record here lives inside Ethereum's global state, replicated by every full node. Retrieval is read-only, free, and reconstructed entirely in your browser.</p>
+        <div class="cta">
+          <a class="pill" href="#records">Browse records</a>
+          <a class="textlink" href="#method">How retrieval works ›</a>
         </div>
       </div>
-    </footer>
-  </div>
+      <div class="hero-art" id="hero-art" aria-hidden="true"></div>
+    </section>
+
+    <div class="stats">
+      <div><div class="stat-n wait" id="k-records">—</div><div class="stat-c">Records on chain</div></div>
+      <div><div class="stat-n wait" id="k-block">—</div><div class="stat-c">Current Sepolia block</div></div>
+      <div><div class="stat-n">$0.00</div><div class="stat-c">Cost to retrieve</div></div>
+      <div><div class="stat-n">~14,000</div><div class="stat-c">Node copies per upload</div></div>
+    </div>
+
+    <section class="perm" id="permanence">
+      <div>
+        <h3>No delete path. No operator to compel.</h3>
+      </div>
+      <div>
+        <p>Once a transaction carrying this content is finalized, the storage slots holding it become part of consensus state, replicated across every full node on the network.</p>
+        <p>Removal would require rewriting finalized history, which is infeasible without control of a supermajority of stake.</p>
+        <a href="https://ethereum.org/en/developers/docs/data-structures-and-encoding/patricia-merkle-trie/" target="_blank" rel="noopener noreferrer">Learn about the state trie ›</a>
+      </div>
+    </section>
+
+    <section class="block" id="records">
+      <h2 class="h2">Registered records.</h2>
+      <p class="lede">Discovered live by walking the on-chain registry: Search returns Tags, each Tag returns its Data contracts.</p>
+
+      <div class="bar">
+        <div class="seg" role="group" aria-label="Retrieval view">
+          <button id="seg-0" class="on" aria-pressed="true" onclick="setMode(0)">Direct</button>
+          <button id="seg-1" aria-pressed="false" onclick="setMode(1)">Trace</button>
+          <button id="seg-2" aria-pressed="false" onclick="setMode(2)">Log</button>
+          <button id="seg-4" aria-pressed="false" onclick="setMode(4)">Bytes</button>
+        </div>
+        <div class="count" id="sec-count">Loading</div>
+      </div>
+      <p class="mode-explain" id="mode-explain" aria-live="polite"></p>
+
+      <div class="records" id="records-grid">
+        <div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div>
+      </div>
+    </section>
+
+    <section class="block" id="method">
+      <h2 class="h2">Three reads. Zero writes.</h2>
+      <p class="lede">No index server, no host, no API key. Every step is an <code>eth_call</code> against public state.</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-n">01</div>
+          <h4>Walk the registry</h4>
+          <p>The Search contract returns every Tag contract. Each Tag returns its Data contracts.</p>
+        </div>
+        <div class="step">
+          <div class="step-n">02</div>
+          <h4>Read metadata</h4>
+          <p>Each Data contract reports its MIME type, chunk count, and part order, naming siblings for multi-part payloads.</p>
+        </div>
+        <div class="step">
+          <div class="step-n">03</div>
+          <h4>Pull the chunks</h4>
+          <p>Bytes are fetched from contract storage via <code>getData</code>, joined client-side, and fingerprinted with SHA-256.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <p>A research artifact from the DarkChain project on adversarial use of the Ethereum state trie for censorship-resistant storage. Read-only. Built by <a href="https://github.com/t1x1j" target="_blank" rel="noopener noreferrer">t1x1j</a>.</p>
+      <div class="foot-r">
+        <a href="https://github.com/t1x1j" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="https://x.com/0xt1x1j" target="_blank" rel="noopener noreferrer" aria-label="X">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.253 5.622 5.91-5.622Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>@0xt1x1j
+        </a>
+      </div>
+    </div>
+  </footer>
 
   <script>
     const CONFIG = {
       RPC_URL:        'https://ethereum-sepolia-rpc.publicnode.com',
       SEARCH_ADDRESS: '0x6Be94D2A64a41b4Bacf278f55c640eBEc86A2Ace',
-      HIDDEN_CONTRACTS: [
-        // Add contract addresses here to hide them from the UI
-        // '0xABC...',
-        // '0xDEF...',
-      ],
+      HIDDEN_CONTRACTS: [],
     };
 
     const SEARCH_ABI = [
-      {
-        inputs: [],
-        name: 'getAllTagContracts',
-        outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
-        stateMutability: 'view',
-        type: 'function',
-      },
+      { inputs: [], name: 'getAllTagContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
     ];
-
     const TAG_ABI = [
-      {
-        inputs: [],
-        name: 'getAllDataContracts',
-        outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [],
-        name: 'getTagName',
-        outputs: [{ internalType: 'string', name: '', type: 'string' }],
-        stateMutability: 'view',
-        type: 'function',
-      },
+      { inputs: [], name: 'getAllDataContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
+      { inputs: [], name: 'getTagName', outputs: [{ internalType: 'string', name: '', type: 'string' }], stateMutability: 'view', type: 'function' },
     ];
-
     const DATA_ABI = [
-      {
-        inputs: [{ internalType: 'uint256', name: '_index', type: 'uint256' }],
-        name: 'getData',
-        outputs: [{ internalType: 'bytes', name: '', type: 'bytes' }],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [],
-        name: 'getDataCount',
-        outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [],
-        name: 'getMetadata',
-        outputs: [
+      { inputs: [{ internalType: 'uint256', name: '_index', type: 'uint256' }], name: 'getData', outputs: [{ internalType: 'bytes', name: '', type: 'bytes' }], stateMutability: 'view', type: 'function' },
+      { inputs: [], name: 'getDataCount', outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }], stateMutability: 'view', type: 'function' },
+      { inputs: [], name: 'getMetadata', outputs: [
           { internalType: 'string',  name: 'mimeType',    type: 'string'  },
           { internalType: 'uint256', name: 'totalParts',  type: 'uint256' },
           { internalType: 'uint256', name: 'currentPart', type: 'uint256' },
           { internalType: 'string',  name: 'description', type: 'string'  },
-        ],
-        stateMutability: 'view',
-        type: 'function',
-      },
-      {
-        inputs: [],
-        name: 'getRelatedContracts',
-        outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }],
-        stateMutability: 'view',
-        type: 'function',
-      },
+        ], stateMutability: 'view', type: 'function' },
+      { inputs: [], name: 'getRelatedContracts', outputs: [{ internalType: 'address[]', name: '', type: 'address[]' }], stateMutability: 'view', type: 'function' },
     ];
 
     const MIME_META = {
-      'text/plain':       { label: 'TXT',  cls: 'mime-text',    ext: 'txt'  },
-      'text/html':        { label: 'HTML', cls: 'mime-text',    ext: 'html' },
-      'text/csv':         { label: 'CSV',  cls: 'mime-text',    ext: 'csv'  },
-      'application/json': { label: 'JSON', cls: 'mime-json',    ext: 'json' },
-      'image/png':        { label: 'PNG',  cls: 'mime-image',   ext: 'png'  },
-      'image/jpeg':       { label: 'JPEG', cls: 'mime-image',   ext: 'jpg'  },
-      'image/gif':        { label: 'GIF',  cls: 'mime-image',   ext: 'gif'  },
-      'image/webp':       { label: 'WEBP', cls: 'mime-image',   ext: 'webp' },
-      'image/svg+xml':    { label: 'SVG',  cls: 'mime-image',   ext: 'svg'  },
-      'image/bmp':        { label: 'BMP',  cls: 'mime-image',   ext: 'bmp'  },
+      'text/plain':       { label: 'TXT',  ext: 'txt'  },
+      'text/html':        { label: 'HTML', ext: 'html' },
+      'text/csv':         { label: 'CSV',  ext: 'csv'  },
+      'application/json': { label: 'JSON', ext: 'json' },
+      'image/png':        { label: 'PNG',  ext: 'png'  },
+      'image/jpeg':       { label: 'JPEG', ext: 'jpg'  },
+      'image/gif':        { label: 'GIF',  ext: 'gif'  },
+      'image/webp':       { label: 'WEBP', ext: 'webp' },
+      'image/svg+xml':    { label: 'SVG',  ext: 'svg'  },
+      'image/bmp':        { label: 'BMP',  ext: 'bmp'  },
     };
 
-    let web3;
-    let searchContract;
-    let contracts = [];
+    let web3, searchContract, contracts = [];
 
-    function mimeMeta(mimeType) {
-      return MIME_META[mimeType] || {
-        label: (mimeType.split('/')[1] || 'BIN').toUpperCase().slice(0, 6),
-        cls: 'mime-default',
-        ext: 'bin',
-      };
-    }
+    function mimeMeta(m){ return MIME_META[m] || { label:(m.split('/')[1]||'BIN').toUpperCase().slice(0,6), ext:'bin' }; }
+    function isImage(m){ return m.startsWith('image/'); }
+    function hexToBytes(hex){ const h=hex.replace(/^0x/,''); const o=new Uint8Array(h.length/2); for(let i=0;i<o.length;i++)o[i]=parseInt(h.slice(i*2,i*2+2),16); return o; }
+    function formatBytes(n){ if(n<1024)return n+' B'; if(n<1048576)return (n/1024).toFixed(1)+' KB'; return (n/1048576).toFixed(2)+' MB'; }
+    function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function safeName(s){ return s.replace(/[^a-z0-9_\-]/gi,'_').slice(0,64)||'content'; }
 
-    function isImage(mimeType) {
-      return mimeType.startsWith('image/');
-    }
-
-    function hexToBytes(hex) {
-      const h = hex.replace(/^0x/, '');
-      const out = new Uint8Array(h.length / 2);
-      for (let i = 0; i < out.length; i++) {
-        out[i] = parseInt(h.slice(i * 2, i * 2 + 2), 16);
+    function buildHeroTrie(){
+      const host=document.getElementById('hero-art'); if(!host) return;
+      const W=640, ys=[24,150,276,402,500], branch=[4,3,2,2], narrow=matchMedia('(max-width: 600px)').matches, pad=narrow?20:190;
+      const levels=[[{x:W/2,p:null}]];
+      for(let l=0;l<branch.length;l++){
+        const next=[], n=levels[l].length*branch[l], span=W-40;
+        let k=0;
+        for(let pi=0;pi<levels[l].length;pi++) for(let b=0;b<branch[l];b++){ next.push({x:20+span*(k+0.5)/n,p:pi}); k++; }
+        levels.push(next);
       }
-      return out;
+      const hi=[0,2,7,14,29];
+      let edges='', nodes='', path='', pnodes='';
+      const curve=(x1,y1,x2,y2)=>{ const my=(y1+y2)/2; return `M${x1.toFixed(1)},${y1} C${x1.toFixed(1)},${my} ${x2.toFixed(1)},${my} ${x2.toFixed(1)},${y2}`; };
+      for(let l=1;l<levels.length;l++){
+        levels[l].forEach((n,idx)=>{
+          const par=levels[l-1][n.p];
+          const d=curve(par.x,ys[l-1],n.x,ys[l]);
+          const len=Math.round(Math.hypot(n.x-par.x,ys[l]-ys[l-1])*1.25);
+          const onPath = hi[l]===idx && hi[l-1]===n.p;
+          if(onPath) path+=`<path class="ht-path draw" d="${d}" style="--len:${len};--d:${(1.1+l*0.35).toFixed(2)}s"/>`;
+          else edges+=`<path class="ht-edge draw" d="${d}" style="--len:${len};--d:${(l*0.12).toFixed(2)}s"/>`;
+          if(!onPath) nodes+=`<circle class="ht-node fade" cx="${n.x.toFixed(1)}" cy="${ys[l]}" r="${l===4?1.8:2.4}" style="--d:${(0.3+l*0.12).toFixed(2)}s"/>`;
+        });
+      }
+      const labs=['World state root','Account node','Storage root','Storage branch','Payload slot'];
+      for(let l=0;l<levels.length;l++){
+        const n=levels[l][hi[l]], leaf=l===levels.length-1, d=(1.1+l*0.35+0.3).toFixed(2);
+        pnodes+= leaf
+          ? `<circle class="ht-ring fade" cx="${n.x}" cy="${ys[l]}" r="11" style="--d:${d}s"/><circle class="ht-leaf fade" cx="${n.x}" cy="${ys[l]}" r="5" style="--d:${d}s"/>`
+          : `<circle class="ht-pnode fade" cx="${n.x}" cy="${ys[l]}" r="${l===0?5:3.6}" style="--d:${d}s"/>`;
+        if(narrow) continue;
+        const lx=W+8;
+        pnodes+=`<line class="ht-tick fade" x1="${(n.x+12).toFixed(1)}" y1="${ys[l]}" x2="${lx-6}" y2="${ys[l]}" style="--d:${d}s"/>`;
+        pnodes+=`<text class="ht-lab fade${leaf?' hi':''}" x="${lx}" y="${ys[l]+5}" style="--d:${d}s">${labs[l]}</text>`;
+      }
+      host.innerHTML=`<svg viewBox="0 0 ${W+pad} 540" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">${edges}${nodes}${path}${pnodes}</svg>`;
     }
 
-    function formatBytes(n) {
-      if (n < 1024)       return n + ' B';
-      if (n < 1048576)    return (n / 1024).toFixed(1) + ' KB';
-      return (n / 1048576).toFixed(2) + ' MB';
-    }
-
-    function esc(s) {
-      return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    }
-
-    function safeName(s) {
-      return s.replace(/[^a-z0-9_\-]/gi, '_').slice(0, 64) || 'content';
-    }
-
-    /* ── Live chain stats polling ── */
-    async function pollChainStats() {
+    async function pollChainStats(){
       try {
-        const blockNum = await web3.eth.getBlockNumber();
-        const blockEl = document.getElementById('live-block');
-        if (blockEl) blockEl.textContent = '#' + Number(blockNum).toLocaleString();
-      } catch(e) {}
-      setTimeout(pollChainStats, 12000);
+        const bn=Number(await web3.eth.getBlockNumber());
+        const k=document.getElementById('k-block'); k.textContent=bn.toLocaleString(); k.classList.remove('wait');
+      } catch(e){}
+      setTimeout(pollChainStats,12000);
     }
 
-    /* ── State trie SVG ── */
-    function buildTrieSVG(contractAddr) {
-      const W = 520, H = 160;
-      const nodes = [
-        { label: 'World State', sub: 'MPT root',                  x: 30,  y: 60, w: 90, accent: false },
-        { label: 'Account',     sub: contractAddr.slice(0,8)+'…', x: 160, y: 60, w: 90, accent: false },
-        { label: 'Storage',     sub: 'Trie root',                 x: 290, y: 60, w: 90, accent: false },
-        { label: 'Your Data',   sub: 'storage slots',             x: 420, y: 60, w: 90, accent: true  },
+    function buildTrieSVG(addr){
+      const nodes=[
+        { l:'World state', s:'MPT root' },
+        { l:'Account', s:addr.slice(0,8)+'…' },
+        { l:'Storage trie', s:'root' },
+        { l:'This payload', s:'leaf slots', hi:true },
       ];
-      const nh = 44;
-      let rects = '', labels = '', arrows = '', sublabels = '';
-      const subLbls = ['Hash pointer','Account state','Storage root','keccak(slot) → value'];
-      for (let k = 0; k < nodes.length; k++) {
-        const n = nodes[k], cy = n.y + nh/2;
-        const fill = n.accent ? 'rgba(30,255,30,0.06)' : '#000';
-        const stroke = n.accent ? '#1eff1e' : '#0a3d0a';
-        rects     += `<rect x="${n.x}" y="${n.y}" width="${n.w}" height="${nh}" rx="0" fill="${fill}" stroke="${stroke}" stroke-width="1"/>`;
-        labels    += `<text x="${n.x+n.w/2}" y="${cy-6}" text-anchor="middle" font-family="VT323,monospace" font-size="11" fill="${n.accent?'#1eff1e':'#14b014'}">${n.label}</text>`;
-        labels    += `<text x="${n.x+n.w/2}" y="${cy+10}" text-anchor="middle" font-family="VT323,monospace" font-size="8.5" fill="#0a660a">${n.sub}</text>`;
-        sublabels += `<text x="${n.x+n.w/2}" y="${n.y+nh+14}" text-anchor="middle" font-family="VT323,monospace" font-size="7.5" fill="#0a3d0a">${subLbls[k]}</text>`;
-        if (k < nodes.length-1) {
-          const x1=n.x+n.w, x2=nodes[k+1].x;
-          arrows += `<line x1="${x1}" y1="${cy}" x2="${x2-8}" y2="${cy}" stroke="#0a3d0a" stroke-width="1" marker-end="url(#arr)"/>`;
-        }
-      }
-      return `<svg class="trie-svg" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-        <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#0a3d0a"/></marker></defs>
-        ${arrows}${rects}${labels}${sublabels}
-        <text x="${W/2}" y="${H-4}" text-anchor="middle" font-family="VT323,monospace" font-size="8" fill="#063d18">ETHEREUM MODIFIED MERKLE PATRICIA TRIE — CONTENT IS A LEAF NODE IN THE STORAGE TRIE</text>
-      </svg>`;
-    }
-
-    /* ── Consolidated info panel ── */
-    async function buildInfoPanel(contractAddr, bytes, mimeType, chunkCount) {
-      const wrap = document.createElement('div');
-      wrap.className = 'provenance-panel';
-      const kb = bytes.length / 1024;
-      const cost = (kb * 1.2).toFixed(2);
-      const sizeStr = kb >= 1 ? kb.toFixed(1)+' KB' : bytes.length+' B';
-      const short = contractAddr.slice(0,10)+'…'+contractAddr.slice(-6);
-      const base = 'https://sepolia.etherscan.io/address/';
-      wrap.innerHTML = `
-        <div class="prov-row">
-          <div class="prov-label">Contract</div>
-          <div class="prov-val"><a href="${base}${contractAddr}" target="_blank" rel="noopener noreferrer">${short} ↗</a></div>
-        </div>
-        <div class="prov-row">
-          <div class="prov-label">Storage Layer</div>
-          <div class="prov-val accent">Ethereum State Trie</div>
-        </div>
-        <div class="prov-row">
-          <div class="prov-label">Size / Chunks</div>
-          <div class="prov-val">${sizeStr} · ${chunkCount} chunk${chunkCount!==1?'s':''}</div>
-        </div>
-        <div class="prov-row">
-          <div class="prov-label">Est. Deploy Cost</div>
-          <div class="prov-val accent">~$${cost} (@ $1.20/KB)</div>
-        </div>
-        <div class="prov-row">
-          <div class="prov-label">Retrieval Cost</div>
-          <div class="prov-val">$0.00 (read-only eth_call)</div>
-        </div>
-        <div class="prov-row">
-          <div class="prov-label">Verify On-Chain</div>
-          <div class="prov-val"><a href="${base}${contractAddr}#readContract" target="_blank" rel="noopener noreferrer">Etherscan → Read Contract ↗</a></div>
-        </div>
-        <div class="prov-row" style="grid-column:1/-1">
-          <div class="prov-label">SHA-256 Fingerprint</div>
-          <div class="prov-val prov-hash">computing…</div>
-        </div>`;
-      (async () => {
-        const el = wrap.querySelector('.prov-hash');
-        try {
-          const buf = await crypto.subtle.digest('SHA-256', bytes);
-          const hex = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-          if (el) el.textContent = '0x' + hex;
-        } catch(e) {
-          if (el) el.textContent = 'unavailable (' + e.message + ')';
-        }
-      })();
-      return wrap;
-    }
-
-    /* ── Multi-contract chain viz ── */
-    function buildContractChain(ordered, currentPart) {
-      if (ordered.length <= 1) return null;
-      const wrap = document.createElement('div');
-      wrap.className = 'contract-chain';
-      wrap.innerHTML = `<div class="chain-title">Multi-Contract Chain — ${ordered.length} parts</div>`;
-      const nodes = document.createElement('div');
-      nodes.className = 'chain-nodes';
-      ordered.forEach((addr, idx) => {
-        if (idx > 0) {
-          const arrow = document.createElement('div');
-          arrow.className = 'chain-arrow'; arrow.textContent = '→';
-          nodes.appendChild(arrow);
-        }
-        const node = document.createElement('div');
-        node.className = 'chain-node' + (idx === currentPart-1 ? ' active' : '');
-        node.innerHTML = `<div class="chain-node-role">Part ${idx+1}</div>
-          <div class="chain-node-addr">${addr ? addr.slice(0,8)+'…'+addr.slice(-4) : '—'}</div>`;
-        nodes.appendChild(node);
+      const nW=150, gap=40, nH=60, W=nodes.length*nW+(nodes.length-1)*gap;
+      let o='';
+      nodes.forEach((n,i)=>{
+        const x=i*(nW+gap);
+        o+=`<rect class="tn${n.hi?' hi':''}" x="${x}" y="0" width="${nW}" height="${nH}" rx="12"/>`;
+        o+=`<text class="tl${n.hi?' hi':''}" x="${x+16}" y="26">${n.l}</text>`;
+        o+=`<text class="ts" x="${x+16}" y="44">${n.s}</text>`;
+        if(i<nodes.length-1){ const x1=x+nW+6, x2=x+nW+gap-6; o+=`<path class="te" d="M${x1},${nH/2} L${x2},${nH/2} M${x2-5},${nH/2-4} L${x2},${nH/2} L${x2-5},${nH/2+4}"/>`; }
       });
-      wrap.appendChild(nodes);
-      return wrap;
+      return `<svg class="trie-svg" viewBox="-1 -1 ${W+2} ${nH+2}" xmlns="http://www.w3.org/2000/svg">${o}</svg>`;
     }
 
-    async function init() {
+    async function buildInfoPanel(addr,bytes,mime,chunks){
+      const w=document.createElement('div'); w.className='prov';
+      const kb=bytes.length/1024, cost=(kb*2.34).toFixed(2);
+      const size=kb>=1?kb.toFixed(1)+' KB':bytes.length+' B';
+      const short=addr.slice(0,10)+'…'+addr.slice(-6);
+      const base='https://sepolia.etherscan.io/address/';
+      w.innerHTML=`
+        <div class="prov-c"><div class="prov-k">Contract</div><div class="prov-v"><a href="${base}${addr}" target="_blank" rel="noopener noreferrer">${short} ↗</a></div></div>
+        <div class="prov-c"><div class="prov-k">Size</div><div class="prov-v">${size} <span class="mut">/ ${chunks} chunk${chunks!==1?'s':''}</span></div></div>
+        <div class="prov-c"><div class="prov-k">Verify</div><div class="prov-v"><a href="${base}${addr}#readContract" target="_blank" rel="noopener noreferrer">Etherscan ↗</a></div></div>
+        <div class="prov-c"><div class="prov-k">Storage layer</div><div class="prov-v">State trie</div></div>
+        <div class="prov-c"><div class="prov-k">Est. write cost</div><div class="prov-v">~$${cost} <span class="mut">@ $2.34/KB</span></div></div>
+        <div class="prov-c"><div class="prov-k">Retrieval cost</div><div class="prov-v">$0.00</div></div>
+        <div class="prov-c full"><div class="prov-k">SHA-256 of reconstructed payload</div><div class="prov-v prov-hash">computing…</div></div>`;
+      (async()=>{
+        const el=w.querySelector('.prov-hash');
+        try { const buf=await crypto.subtle.digest('SHA-256',bytes); el.textContent='0x'+Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
+        catch(e){ el.textContent='unavailable'; }
+      })();
+      return w;
+    }
 
+    function buildContractChain(ordered,currentPart){
+      if(ordered.length<=1) return null;
+      const w=document.createElement('div'); w.className='panel';
+      let n='';
+      ordered.forEach((a,i)=>{ if(i>0) n+=`<span class="carr">›</span>`; n+=`<div class="cnode${i===currentPart-1?' on':''}"><div class="r">Part ${i+1}</div><div class="a">${a?a.slice(0,8)+'…'+a.slice(-4):'—'}</div></div>`; });
+      w.innerHTML=`<div class="panel-cap">Reassembled from ${ordered.length} contracts, in order</div><div class="chainrow">${n}</div>`;
+      return w;
+    }
+
+    async function init(){
+      buildHeroTrie();
       try {
-        web3 = new Web3(CONFIG.RPC_URL);
-        searchContract = new web3.eth.Contract(SEARCH_ABI, CONFIG.SEARCH_ADDRESS);
+        web3=new Web3(CONFIG.RPC_URL);
+        searchContract=new web3.eth.Contract(SEARCH_ABI,CONFIG.SEARCH_ADDRESS);
         pollChainStats();
         await loadContracts();
-      } catch (err) {
-        showGridError('RPC connection failed: ' + err.message);
-      }
+      } catch(err){ showGridError('RPC connection failed: '+err.message); }
     }
 
-    async function loadContracts() {
-      const grid = document.getElementById('contracts-grid');
-
+    async function loadContracts(){
+      const grid=document.getElementById('records-grid');
       try {
-        let tagAddresses;
-        try {
-          tagAddresses = await searchContract.methods.getAllTagContracts().call();
-        } catch (e) {
-          throw new Error('getAllTagContracts() failed on Search contract: ' + e.message);
-        }
+        let tags;
+        try { tags=await searchContract.methods.getAllTagContracts().call(); }
+        catch(e){ throw new Error('getAllTagContracts() failed: '+e.message); }
+        if(tags.length===0){ setCount(0); grid.innerHTML=emptyHTML('No records yet','Deploy data contracts and register them with the Search contract to list them here.'); return; }
 
-        if (tagAddresses.length === 0) {
-          const statCount = document.getElementById('stat-count');
-          statCount.textContent = '0';
-          statCount.classList.remove('pending');
-          grid.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-title">No contracts registered</div>
-              <div class="empty-state-desc">Deploy data contracts and register them with the Search contract to display them here.</div>
-            </div>`;
-          return;
-        }
+        const arrays=await Promise.all(tags.map(async t=>{
+          try { return await new web3.eth.Contract(TAG_ABI,t).methods.getAllDataContracts().call(); }
+          catch(e){ throw new Error('getAllDataContracts() failed on '+t+': '+e.message); }
+        }));
+        const all=arrays.flat();
+        setCount(all.length);
+        if(all.length===0){ grid.innerHTML=emptyHTML('No data contracts','Tag contracts exist but none have data contracts registered.'); return; }
 
-        const dataAddressArrays = await Promise.all(
-          tagAddresses.map(async (tagAddr) => {
-            try {
-              const tc = new web3.eth.Contract(TAG_ABI, tagAddr);
-              return await tc.methods.getAllDataContracts().call();
-            } catch (e) {
-              throw new Error('getAllDataContracts() failed on tag contract ' + tagAddr + ': ' + e.message);
-            }
-          })
-        );
-
-        const allDataAddresses = dataAddressArrays.flat();
-
-        const statCount = document.getElementById('stat-count');
-        statCount.textContent = allDataAddresses.length;
-        statCount.classList.remove('pending');
-        const liveContracts = document.getElementById('live-contracts');
-        if (liveContracts) liveContracts.textContent = allDataAddresses.length;
-
-        if (allDataAddresses.length === 0) {
-          grid.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-state-title">No data contracts found</div>
-              <div class="empty-state-desc">Tag contracts exist but have no data contracts registered under them.</div>
-            </div>`;
-          return;
-        }
-
-        const results = await Promise.allSettled(
-          allDataAddresses.map(async (addr) => {
-            const dc = new web3.eth.Contract(DATA_ABI, addr);
-            const m = await dc.methods.getMetadata().call();
-            return {
-              address:     addr,
-              mimeType:    m[0] || m.mimeType    || 'text/plain',
-              totalParts:  Number(m[1] ?? m.totalParts  ?? 1),
-              currentPart: Number(m[2] ?? m.currentPart ?? 1),
-              description: m[3] || m.description || 'Untitled',
-            };
-          })
-        );
-
-        const hidden = new Set(
-          CONFIG.HIDDEN_CONTRACTS.map(a => a.toLowerCase())
-        );
-
-        contracts = results
-          .filter(r => r.status === 'fulfilled')
-          .filter(r => !hidden.has(r.value.address.toLowerCase()))
-          .map(r => r.value);
-
-        grid.innerHTML = contracts.map((c, i) => cardHTML(c, i)).join('');
-
-      } catch (err) {
-        showGridError('Failed to load contracts: ' + err.message);
-      }
+        const results=await Promise.allSettled(all.map(async addr=>{
+          const m=await new web3.eth.Contract(DATA_ABI,addr).methods.getMetadata().call();
+          return { address:addr, mimeType:m[0]||m.mimeType||'text/plain', totalParts:Number(m[1]??m.totalParts??1), currentPart:Number(m[2]??m.currentPart??1), description:m[3]||m.description||'Untitled' };
+        }));
+        const hidden=new Set(CONFIG.HIDDEN_CONTRACTS.map(a=>a.toLowerCase()));
+        contracts=results.filter(r=>r.status==='fulfilled').filter(r=>!hidden.has(r.value.address.toLowerCase())).map(r=>r.value);
+        grid.innerHTML=contracts.map((c,i)=>cardHTML(c,i)).join('');
+      } catch(err){ showGridError('Failed to load records: '+err.message); }
     }
 
-    function cardHTML(c, i) {
-      const { label, cls } = mimeMeta(c.mimeType);
-      const parts = c.totalParts > 1
-        ? `${c.totalParts}-contract upload <span class="parts-note" onclick="this.nextElementSibling.classList.toggle('open');this.classList.toggle('active')">(?) </span><div class="parts-explain">Content too large for one contract — stored across ${c.totalParts} linked contracts and reassembled client-side on retrieval.</div>`
-        : `1-contract upload`;
+    function setCount(n){
+      const k=document.getElementById('k-records'); k.textContent=n; k.classList.remove('wait');
+      document.getElementById('sec-count').textContent=n+' record'+(n!==1?'s':'');
+    }
+    function emptyHTML(h,p){ return `<div class="empty"><h3>${h}</h3><p>${p}</p></div>`; }
 
+    function cardHTML(c,i){
+      const { label }=mimeMeta(c.mimeType);
+      const parts=c.totalParts>1
+        ? `${c.totalParts} contracts<button class="why" onclick="this.nextElementSibling.classList.toggle('open')">Why?</button><span class="why-ex">Too large for one contract, so it is split across ${c.totalParts} linked contracts and reassembled in your browser.</span>`
+        : 'Single contract';
       return `
-        <div class="contract-card">
-          <div class="card-header">
-            <div class="card-title">${esc(c.description)}</div>
-            <span class="mime-badge ${cls}">${label}</span>
+        <article class="record" id="rec-${i}">
+          <div class="rec-head">
+            <div class="rec-title">${esc(c.description)}</div>
+            <span class="rec-type">${esc(label)}</span>
           </div>
-          <div class="card-body">
-            <div class="card-address">
-              <span class="addr-label">addr</span>${c.address}
-            </div>
-            <div class="card-footer">
-              <span class="card-parts">${parts}</span>
-              <button class="retrieve-btn" id="btn-${i}" onclick="handleRetrieve(${i})">
-                ▶&nbsp;Retrieve
-              </button>
-            </div>
+          <div class="rec-meta">
+            <div class="rec-row"><span class="k">Address</span><span class="v"><a href="https://sepolia.etherscan.io/address/${c.address}" target="_blank" rel="noopener noreferrer" title="View on Etherscan">${c.address}</a></span></div>
+            <div class="rec-row"><span class="k">Storage</span><span class="v">${parts}</span></div>
           </div>
-          <div class="content-viewer" id="viewer-${i}">
-            <div class="progress-bar">
-              <div class="progress-fill" id="progress-${i}"></div>
-            </div>
-            <div class="content-status" id="status-${i}"></div>
+          <div class="rec-foot"><button class="pill" id="btn-${i}" onclick="handleRetrieve(${i})">Retrieve</button></div>
+          <div class="viewer" id="viewer-${i}">
+            <div class="track"><div class="track-fill" id="track-${i}"></div></div>
+            <div class="vstatus" id="status-${i}"></div>
             <div id="content-${i}"></div>
-            <div class="content-actions" id="actions-${i}"></div>
+            <div class="actions" id="actions-${i}"></div>
           </div>
-        </div>`;
+        </article>`;
     }
 
-    async function fetchContractData(address) {
-      const dc = new web3.eth.Contract(DATA_ABI, address);
-      const count = Number(await dc.methods.getDataCount().call());
-      let hex = '';
-      for (let j = 0; j < count; j++) {
-        const chunk = await dc.methods.getData(j).call();
-        hex += chunk.replace(/^0x/, '');
-      }
+    function setBtn(btn,state){
+      if(state==='busy'){ btn.disabled=true; btn.textContent='Retrieving…'; btn.classList.remove('ghost'); }
+      else if(state==='open'){ btn.disabled=false; btn.textContent='Close'; btn.classList.add('ghost'); }
+      else { btn.disabled=false; btn.textContent='Retrieve'; btn.classList.remove('ghost'); }
+    }
+
+    async function fetchContractData(address){
+      const dc=new web3.eth.Contract(DATA_ABI,address);
+      const count=Number(await dc.methods.getDataCount().call());
+      let hex='';
+      for(let j=0;j<count;j++){ const chunk=await dc.methods.getData(j).call(); hex+=chunk.replace(/^0x/,''); }
       return hex;
     }
 
-    async function buildOrderedAddresses(primaryAddress, totalParts, currentPart) {
-      if (totalParts === 1) return [primaryAddress];
-
-      const dc = new web3.eth.Contract(DATA_ABI, primaryAddress);
-      const related = await dc.methods.getRelatedContracts().call();
-
-      const ordered = new Array(totalParts).fill(null);
-      ordered[currentPart - 1] = primaryAddress;
-
-      for (const addr of related) {
-        const rc = new web3.eth.Contract(DATA_ABI, addr);
-        const m = await rc.methods.getMetadata().call();
-        const part = Number(m[2] ?? m.currentPart);
-        ordered[part - 1] = addr;
+    async function buildOrderedAddresses(primary,totalParts,currentPart){
+      if(totalParts===1) return [primary];
+      const related=await new web3.eth.Contract(DATA_ABI,primary).methods.getRelatedContracts().call();
+      const ordered=new Array(totalParts).fill(null);
+      ordered[currentPart-1]=primary;
+      for(const addr of related){
+        const m=await new web3.eth.Contract(DATA_ABI,addr).methods.getMetadata().call();
+        ordered[Number(m[2]??m.currentPart)-1]=addr;
       }
-
       return ordered;
     }
 
-    let pipelineMode = Number(localStorage.getItem('pipelineMode') || 0);
-
-    const MODE_DESCS = {
-      0: 'Fetches contract data silently and renders the result directly with no pipeline visualization.',
-      1: 'Shows a 7-stage horizontal pipeline — Browser → JSON-RPC → ETH Node → State Trie → Hex Chunks → Reassembly → Render — where each node lights up as the corresponding RPC call completes and a packet animates along the wire between stages.',
-      2: 'Opens a terminal window that prints each RPC call as it happens: connection handshake, getMetadata, getDataCount, then one hex-dump line per getData chunk showing the real first 32 bytes, byte count, and per-call latency.',
-      4: 'Splits the viewer in two. The right side shows a live scrolling hex dump of incoming bytes as each getData call returns. The left side fills row-by-row with noise while data arrives, then snaps to the decoded image or text when assembly is complete.',
+    let pipelineMode=Number(localStorage.getItem('dcMode')||0);
+    const MODE_EXPLAIN={
+      0:'Fetches the payload and renders it directly. The fastest path.',
+      1:'Follows the request through each stage, from browser to JSON-RPC, node, state trie, chunk transfer, and reassembly.',
+      2:'Logs every RPC call: chain handshake, metadata and chunk-count reads, then one line per chunk with its leading bytes, size, and latency.',
+      4:'Streams the raw bytes as a live hex dump while the output resolves alongside it.',
     };
-
-    function applyMode(m) {
-      [0, 1, 2, 4].forEach(id => {
-        const t = document.getElementById(`mode-tab-${id}`);
-        if (t) t.classList.toggle('active', id === m);
-      });
-      const desc = document.getElementById('mode-desc');
-      if (desc) desc.textContent = MODE_DESCS[m] || '';
+    function applyMode(m){
+      [0,1,2,4].forEach(id=>{ const b=document.getElementById(`seg-${id}`); if(b){ b.classList.toggle('on',id===m); b.setAttribute('aria-pressed',id===m?'true':'false'); } });
+      document.getElementById('mode-explain').textContent=MODE_EXPLAIN[m]||'';
+    }
+    const runs={};
+    function closeViewer(i){
+      runs[i]=(runs[i]||0)+1;
+      const v=document.getElementById(`viewer-${i}`); if(!v) return;
+      v.classList.remove('open');
+      document.getElementById(`rec-${i}`).classList.remove('wide');
+      document.getElementById(`content-${i}`).innerHTML='';
+      const a=document.getElementById(`actions-${i}`); a.innerHTML=''; a.style.display='none';
+      document.getElementById(`status-${i}`).textContent='';
+      document.getElementById(`track-${i}`).style.width='0%';
+      setBtn(document.getElementById(`btn-${i}`),'idle');
+    }
+    function setMode(m){
+      if(m===pipelineMode) return;
+      pipelineMode=m; localStorage.setItem('dcMode',m); applyMode(m);
+      contracts.forEach((_,i)=>{ const v=document.getElementById(`viewer-${i}`); if(v&&v.classList.contains('open')) closeViewer(i); });
     }
 
-    function setMode(m) {
-      if (m === pipelineMode) return;
-      pipelineMode = m;
-      localStorage.setItem('pipelineMode', m);
-      applyMode(m);
-      contracts.forEach((_, i) => {
-        const viewer = document.getElementById(`viewer-${i}`);
-        if (!viewer || !viewer.classList.contains('open')) return;
-        viewer.classList.remove('open');
-        document.getElementById(`content-${i}`).innerHTML = '';
-        const actions = document.getElementById(`actions-${i}`);
-        actions.innerHTML = ''; actions.style.display = 'none';
-        document.getElementById(`status-${i}`).textContent = '';
-        document.getElementById(`progress-${i}`).style.width = '0%';
-        const btn = document.getElementById(`btn-${i}`);
-        btn.textContent = '▶\u00a0Retrieve'; btn.disabled = false;
-      });
+    function makeTimer(container,label){
+      const w=document.createElement('div'); w.className='timer';
+      w.innerHTML=`<span>Elapsed</span><span class="v" id="tv-${label}">0.000s</span>`;
+      container.appendChild(w);
+      const t0=Date.now(), raf={id:null};
+      const tick=()=>{ const el=document.getElementById(`tv-${label}`); if(el) el.textContent=((Date.now()-t0)/1000).toFixed(3)+'s'; raf.id=requestAnimationFrame(tick); };
+      raf.id=requestAnimationFrame(tick);
+      return {
+        stop(){ cancelAnimationFrame(raf.id); const el=document.getElementById(`tv-${label}`); if(el) el.textContent=((Date.now()-t0)/1000).toFixed(3)+'s'; w.classList.add('done'); },
+        elapsed(){ return Date.now()-t0; }
+      };
     }
 
-    /* ── V1 Network Flow helpers ── */
-    const FLOW_STAGES = ['BROWSER','JSON-RPC','ETH NODE','STATE TRIE','HEX CHUNKS','REASSEMBLY','RENDER'];
-
-    function buildFlowSVG(cardIdx) {
-      const n = FLOW_STAGES.length;
-      const nodeW = 68, nodeH = 28, gap = 18;
-      const totalW = n * nodeW + (n - 1) * gap;
-      const svgH = nodeH + 24;
-      let rects = '', labels = '', conns = '';
-      for (let s = 0; s < n; s++) {
-        const x = s * (nodeW + gap), mid = nodeH / 2;
-        rects  += `<rect id="pf-node-${cardIdx}-${s}" x="${x}" y="0" width="${nodeW}" height="${nodeH}" rx="0" fill="#000" stroke="#0e3517" stroke-width="1"/>`;
-        labels += `<text id="pf-label-${cardIdx}-${s}" x="${x + nodeW/2}" y="${mid + 4}" text-anchor="middle" font-family="VT323,monospace" font-size="8" fill="#1d6b2b" letter-spacing="0.05em">${FLOW_STAGES[s]}</text>`;
-        if (s < n - 1) {
-          const lx = x + nodeW, rx2 = lx + gap;
-          conns += `<line id="pf-conn-${cardIdx}-${s}" x1="${lx}" y1="${mid}" x2="${rx2}" y2="${mid}" stroke="#0e3517" stroke-width="2"/>`;
-          conns += `<circle id="pf-pkt-${cardIdx}-${s}" cx="${lx}" cy="${mid}" r="3" fill="#1d6b2b" opacity="0"/>`;
-        }
+    const STAGES=['Browser','JSON-RPC','Node','State trie','Chunks','Reassembly','Render'];
+    const TR={ nW:96, nH:36, gap:18 };
+    function buildTraceSVG(idx){
+      const n=STAGES.length, total=n*TR.nW+(n-1)*TR.gap;
+      let r='';
+      for(let s=0;s<n;s++){
+        const x=s*(TR.nW+TR.gap), mid=TR.nH/2;
+        r+=`<rect id="tn-${idx}-${s}" x="${x}" y="0" width="${TR.nW}" height="${TR.nH}" rx="10" style="fill:var(--s3);stroke:transparent;stroke-width:1"/>`;
+        r+=`<text id="tl-${idx}-${s}" x="${x+TR.nW/2}" y="${mid+4}" text-anchor="middle" style="font-family:var(--text);font-size:12px;font-weight:500;fill:var(--t3)">${STAGES[s]}</text>`;
+        if(s<n-1){ const lx=x+TR.nW, rx=lx+TR.gap; r+=`<line id="tc-${idx}-${s}" x1="${lx+3}" y1="${mid}" x2="${rx-3}" y2="${mid}" style="stroke:var(--s3);stroke-width:1.5"/>`; r+=`<circle id="tp-${idx}-${s}" cx="${lx}" cy="${mid}" r="3" style="fill:var(--t1)" opacity="0"/>`; }
       }
-      return `<svg class="pf-svg" viewBox="0 0 ${totalW} ${svgH}" xmlns="http://www.w3.org/2000/svg">${conns}${rects}${labels}
-        <text id="pf-bytes-${cardIdx}" x="${totalW/2}" y="${svgH}" text-anchor="middle" font-family="VT323,monospace" font-size="8" fill="#1d6b2b">—</text></svg>`;
+      return `<svg class="trace-svg" viewBox="0 0 ${total} ${TR.nH}" xmlns="http://www.w3.org/2000/svg">${r}</svg>`;
     }
-
-    function pfActivate(cardIdx, stage) {
-      for (let s = 0; s < FLOW_STAGES.length; s++) {
-        const node = document.getElementById(`pf-node-${cardIdx}-${s}`);
-        const lbl  = document.getElementById(`pf-label-${cardIdx}-${s}`);
-        if (!node) continue;
-        if (s < stage) {
-          node.setAttribute('stroke','#1a5a28'); node.setAttribute('fill','#020502'); lbl.setAttribute('fill','#46b452');
-        } else if (s === stage) {
-          node.setAttribute('stroke','#1eff1e'); node.setAttribute('fill','#031003'); lbl.setAttribute('fill','#1eff1e');
-          pfAnimPkt(cardIdx, stage);
-        } else {
-          node.setAttribute('stroke','#0e3517'); node.setAttribute('fill','#000'); lbl.setAttribute('fill','#1d6b2b');
-        }
+    function trActivate(idx,stage){
+      for(let s=0;s<STAGES.length;s++){
+        const node=document.getElementById(`tn-${idx}-${s}`), lbl=document.getElementById(`tl-${idx}-${s}`); if(!node) continue;
+        if(s<stage){ node.style.fill='var(--s3)'; node.style.stroke='transparent'; lbl.style.fill='var(--t2)'; }
+        else if(s===stage){ node.style.fill='var(--t1)'; node.style.stroke='var(--t1)'; lbl.style.fill='#000'; trPkt(idx,stage); }
+        else { node.style.fill='var(--s3)'; node.style.stroke='transparent'; lbl.style.fill='var(--t3)'; }
       }
     }
-
-    function pfAnimPkt(cardIdx, stage) {
-      if (stage >= FLOW_STAGES.length - 1) return;
-      const pkt  = document.getElementById(`pf-pkt-${cardIdx}-${stage}`);
-      const conn = document.getElementById(`pf-conn-${cardIdx}-${stage}`);
-      if (!pkt || !conn) return;
-      const nodeW = 68, gap = 18, mid = 14;
-      const x1 = stage * (nodeW + gap) + nodeW, x2 = x1 + gap;
-      conn.setAttribute('stroke','#46b452');
-      pkt.setAttribute('opacity','1');
-      let t = 0;
-      const tick = () => { t++; pkt.setAttribute('cx', x1 + (x2-x1)*(t/12)); if (t<12) requestAnimationFrame(tick); else pkt.setAttribute('opacity','0'); };
+    function trPkt(idx,stage){
+      if(stage>=STAGES.length-1) return;
+      const pkt=document.getElementById(`tp-${idx}-${stage}`), conn=document.getElementById(`tc-${idx}-${stage}`); if(!pkt||!conn) return;
+      const x1=stage*(TR.nW+TR.gap)+TR.nW, x2=x1+TR.gap;
+      conn.style.stroke='var(--t2)'; pkt.setAttribute('opacity','1');
+      let t=0; const tick=()=>{ t++; pkt.setAttribute('cx',x1+(x2-x1)*(t/12)); if(t<12) requestAnimationFrame(tick); else pkt.setAttribute('opacity','0'); };
       requestAnimationFrame(tick);
     }
-
-    /* ── Shared pipeline timer ── */
-    function makeTimer(container, label) {
-      const wrap = document.createElement('div');
-      wrap.className = 'pipeline-timer';
-      wrap.innerHTML = `<div class="pipeline-timer-dot" id="ptdot-${label}"></div>
-        <span style="color:var(--text-dim)">// elapsed</span>
-        <span class="pipeline-timer-val" id="ptval-${label}">0.000s</span>`;
-      container.appendChild(wrap);
-      const t0 = Date.now();
-      const raf = { id: null };
-      const tick = () => {
-        const el = document.getElementById(`ptval-${label}`);
-        if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(3) + 's';
-        raf.id = requestAnimationFrame(tick);
-      };
-      raf.id = requestAnimationFrame(tick);
-      return {
-        stop() {
-          cancelAnimationFrame(raf.id);
-          const el = document.getElementById(`ptval-${label}`);
-          const dot = document.getElementById(`ptdot-${label}`);
-          if (el) el.textContent = ((Date.now() - t0) / 1000).toFixed(3) + 's';
-          if (dot) dot.className = 'pipeline-timer-dot done';
-        },
-        elapsed() { return Date.now() - t0; }
-      };
-    }
-
-    async function retrieveV1(i, c, content, actions, progress) {
-      const flowWrap = document.createElement('div');
-      flowWrap.className = 'pipeline-flow';
-      flowWrap.innerHTML = buildFlowSVG(i) + `<div class="pf-log active" id="pf-log-${i}">Initializing…</div>`;
-      content.appendChild(flowWrap);
-      const timer = makeTimer(flowWrap, `v1-${i}`);
-      const setLog = (txt, active=true) => { const el = document.getElementById(`pf-log-${i}`); if(el){el.textContent=txt; el.className=`pf-log${active?' active':''}`;}};
-      const setBytes = txt => { const el = document.getElementById(`pf-bytes-${i}`); if(el) el.textContent=txt; };
-      const delay = ms => new Promise(r => setTimeout(r, ms));
-
-      pfActivate(i, 0); setLog('Connecting to node…'); await delay(200);
-      pfActivate(i, 1); setLog('Establishing JSON-RPC session…'); await delay(180);
-      pfActivate(i, 2); setLog(`eth_call → getMetadata(${c.address.slice(0,8)}…)`);
-
-      const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
-      await delay(80);
-
-      pfActivate(i, 3); setLog('Resolving state trie storage slots…');
-      const chunkCounts = [];
-      let totalChunks = 0;
-      for (const addr of ordered) {
-        const dc = new web3.eth.Contract(DATA_ABI, addr);
-        const cnt = Number(await dc.methods.getDataCount().call());
-        chunkCounts.push(cnt); totalChunks += cnt;
-      }
-      setLog(`${totalChunks} chunks across ${ordered.length} contract(s)`); await delay(100);
-
-      pfActivate(i, 4);
-      let received = 0, totalBytes = 0, allHex = '';
-      for (let p = 0; p < ordered.length; p++) {
-        const dc = new web3.eth.Contract(DATA_ABI, ordered[p]);
-        for (let j = 0; j < chunkCounts[p]; j++) {
-          const raw = await dc.methods.getData(j).call();
-          const hex = raw.replace(/^0x/,''); allHex += hex;
-          received++; totalBytes += hex.length/2;
-          progress.style.width = `${(received/totalChunks)*80}%`;
-          setLog(`chunk ${received}/${totalChunks} — ${totalBytes.toLocaleString()} bytes received`);
-          setBytes(`${totalBytes.toLocaleString()} B received · chunk ${received}/${totalChunks}`);
-        }
-      }
-
-      pfActivate(i, 5); setLog('Reassembling hex chunks…'); progress.style.width='90%'; await delay(150);
-      pfActivate(i, 6); setLog('Rendering content…'); progress.style.width='100%'; await delay(80);
-      setLog(`Done — ${totalBytes.toLocaleString()} B · ${c.mimeType}`, false);
-      setBytes(`${totalBytes.toLocaleString()} B · ${received} chunks · ${c.mimeType}`);
-      timer.stop();
-      return allHex;
-    }
-
-    /* ── V2 Terminal helpers ── */
-    function ptLine(out, html) {
-      const d = document.createElement('div'); d.className='pt-line';
-      d.innerHTML=`<span class="pt-prompt">›</span><span>${html}</span>`;
-      out.appendChild(d); out.scrollTop=out.scrollHeight;
-    }
-    function ptComment(out, html) {
-      const d=document.createElement('div'); d.className='pt-line'; d.innerHTML=`<span>${html}</span>`;
-      out.appendChild(d); out.scrollTop=out.scrollHeight;
-    }
-    function ptSpacer(out) { const d=document.createElement('div'); d.style.height='4px'; out.appendChild(d); }
-    function ptHexLine(addr, bytes) {
-      const a='0x'+addr.toString(16).padStart(8,'0');
-      const parts=[]; for(let k=0;k<bytes.length;k++){parts.push(bytes[k].toString(16).padStart(2,'0'));if(k===7)parts.push('');}
-      const ascii=bytes.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
-      return `<span class="pt-comment">${a}  </span><span class="pt-hex">${parts.join(' ')}</span><span class="pt-comment">  |${ascii}|</span>`;
-    }
-
-    async function retrieveV2(i, c, content, actions, progress) {
-      const term = document.createElement('div'); term.className='pipeline-terminal';
-      term.innerHTML=`<div class="pipeline-terminal-bar">
-        <div class="ptb-dot r"></div><div class="ptb-dot y"></div><div class="ptb-dot g"></div>
-        <div class="ptb-label">eth-node-session — ${c.address.slice(0,8)}…</div></div>
-        <div class="pipeline-terminal-out" id="ptout-${i}"></div>`;
-      content.appendChild(term);
-      const out=document.getElementById(`ptout-${i}`);
-      const timer=makeTimer(term,`v2-${i}`);
+    async function retrieveV1(i,c,content,actions,track){
+      const box=document.createElement('div'); box.className='panel';
+      box.innerHTML=buildTraceSVG(i)+`<div class="trace-log" id="tlog-${i}">Initializing…</div>`;
+      content.appendChild(box);
+      const timer=makeTimer(box,`v1-${i}`);
+      const log=t=>{ const el=document.getElementById(`tlog-${i}`); if(el) el.textContent=t; };
       const delay=ms=>new Promise(r=>setTimeout(r,ms));
-
-      ptLine(out,`<span class="pt-key">transport</span>  <span class="pt-val">${CONFIG.RPC_URL.replace('https://','')}</span>`); await delay(120);
-      ptLine(out,`<span class="pt-key">eth_chainId</span>  <span class="pt-comment">→  </span><span class="pt-val">0xaa36a7</span><span class="pt-comment">  (Sepolia)</span>`);
-      ptSpacer(out);
-
-      const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
-      ptLine(out,`<span class="pt-key">getMetadata</span>  <span class="pt-comment">addr: </span><span class="pt-val">${c.address}</span>`); await delay(80);
-      ptLine(out,`<span class="pt-comment">←  mime: </span><span class="pt-val">${c.mimeType}</span><span class="pt-comment">  parts: </span><span class="pt-val">${c.totalParts}</span>`);
-      ptSpacer(out);
-
-      const chunkCounts=[]; let totalChunks=0;
-      for (const addr of ordered) {
-        const dc=new web3.eth.Contract(DATA_ABI,addr);
-        const cnt=Number(await dc.methods.getDataCount().call());
-        chunkCounts.push(cnt); totalChunks+=cnt;
-        ptLine(out,`<span class="pt-key">getDataCount</span>  <span class="pt-val">${addr.slice(0,10)}…</span>  <span class="pt-comment">→  </span><span class="pt-val">${cnt} chunks</span>`); await delay(60);
-      }
-      ptSpacer(out); ptComment(out,`<span class="pt-comment">// fetching ${totalChunks} chunks across ${ordered.length} contract(s)</span>`); ptSpacer(out);
-
-      let offset=0, totalBytes=0, received=0, allHex='';
-      for (let p=0; p<ordered.length; p++) {
-        const dc=new web3.eth.Contract(DATA_ABI,ordered[p]);
-        if (ordered.length>1) { ptLine(out,`<span class="pt-comment">// contract ${p+1}/${ordered.length}: ${ordered[p]}</span>`); ptSpacer(out); }
-        for (let j=0; j<chunkCounts[p]; j++) {
-          const t1=Date.now();
-          const raw=await dc.methods.getData(j).call();
-          const lat=Date.now()-t1;
-          const hex=raw.replace(/^0x/,''); allHex+=hex;
-          const bytes=hexToBytes(hex); totalBytes+=bytes.length; received++;
-          const d16=bytes.slice(0,16);
-          ptLine(out,`<span class="pt-comment">chunk[${String(j).padStart(2,'0')}]  </span>${ptHexLine(offset,d16)}<span class="pt-comment">  ${bytes.length}B  ${lat}ms</span>`);
-          if (bytes.length>16) {
-            const extra=bytes.slice(16,32);
-            if(extra.length) ptLine(out,`<span class="pt-comment">         </span>${ptHexLine(offset+16,extra)}`);
-            if(bytes.length>32) ptComment(out,`<span class="pt-dim">         … ${bytes.length-32} more bytes …</span>`);
-          }
-          offset+=bytes.length;
-          progress.style.width=`${(received/totalChunks)*90}%`;
-        }
-      }
-
-      ptSpacer(out);
-      ptLine(out,`<span class="pt-success">✓ complete</span>  <span class="pt-comment">${totalBytes.toLocaleString()} B  ·  ${received} chunks  ·  ${timer.elapsed()}ms</span>`);
-      ptSpacer(out); ptComment(out,`<span class="pt-dim">// rendering…</span>`);
-      progress.style.width='100%';
+      trActivate(i,0); log('Opening connection to node…'); await delay(200);
+      trActivate(i,1); log('Establishing JSON-RPC session…'); await delay(180);
+      trActivate(i,2); log(`eth_call getMetadata(${c.address.slice(0,8)}…)`);
+      const ordered=await buildOrderedAddresses(c.address,c.totalParts,c.currentPart); await delay(80);
+      trActivate(i,3); log('Resolving storage slots…');
+      const counts=[]; let total=0;
+      for(const a of ordered){ const n=Number(await new web3.eth.Contract(DATA_ABI,a).methods.getDataCount().call()); counts.push(n); total+=n; }
+      log(`${total} chunk${total!==1?'s':''} across ${ordered.length} contract${ordered.length!==1?'s':''}`); await delay(100);
+      trActivate(i,4);
+      let got=0, bytes=0, hex='';
+      for(let p=0;p<ordered.length;p++){ const dc=new web3.eth.Contract(DATA_ABI,ordered[p]); for(let j=0;j<counts[p];j++){ const h=(await dc.methods.getData(j).call()).replace(/^0x/,''); hex+=h; got++; bytes+=h.length/2; track.style.width=`${(got/total)*80}%`; log(`Chunk ${got} of ${total} · ${bytes.toLocaleString()} bytes`); } }
+      trActivate(i,5); log('Reassembling payload…'); track.style.width='90%'; await delay(150);
+      trActivate(i,6); log('Rendering…'); track.style.width='100%'; await delay(80);
+      log(`Complete · ${bytes.toLocaleString()} bytes · ${c.mimeType}`);
       timer.stop();
-      return allHex;
+      return hex;
     }
 
-    /* ── V4 Hex Dump helpers ── */
-    function hrFormatLine(addr, bytes, isFirst) {
+    function llLine(out,html){ const d=document.createElement('div'); d.className='ll'; d.innerHTML=`<span class="pre">›</span><span>${html}</span>`; out.appendChild(d); out.scrollTop=out.scrollHeight; }
+    function llPlain(out,html){ const d=document.createElement('div'); d.className='ll'; d.innerHTML=`<span>${html}</span>`; out.appendChild(d); out.scrollTop=out.scrollHeight; }
+    function llGap(out){ const d=document.createElement('div'); d.style.height='6px'; out.appendChild(d); }
+    function llHex(addr,bytes){
       const a='0x'+addr.toString(16).padStart(8,'0');
-      const parts=[]; for(let k=0;k<bytes.length;k++){const bh=bytes[k].toString(16).padStart(2,'0'); const hi=isFirst&&k<8; parts.push(hi?`<span class="hr-hi">${bh}</span>`:`<span class="hr-bytes">${bh}</span>`); if(k===7)parts.push(' ');}
-      const ascii=bytes.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
-      return `<div class="hr-line"><span class="hr-addr">${a}  </span>${parts.join(' ')}<span class="hr-sep">  |</span><span class="hr-ascii">${ascii}</span><span class="hr-sep">|</span></div>`;
+      const parts=[]; for(let k=0;k<bytes.length;k++){ parts.push(bytes[k].toString(16).padStart(2,'0')); if(k===7) parts.push(''); }
+      const ascii=Array.from(bytes).map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+      return `<span class="lc">${a}</span>  <span class="lhex">${parts.join(' ')}</span>  <span class="lc">|${esc(ascii)}|</span>`;
     }
-
-    function noiseCanvas(canvas, w, h) {
-      const ctx=canvas.getContext('2d'); const id=ctx.createImageData(w,h);
-      for(let k=0;k<id.data.length;k+=4){const v=Math.floor(Math.random()*14); id.data[k]=v; id.data[k+1]=Math.floor(v*1.4+Math.random()*4); id.data[k+2]=v; id.data[k+3]=255;}
-      ctx.putImageData(id,0,0);
-    }
-
-    async function retrieveV4(i, c, content, actions, progress) {
-      const isImg = c.mimeType.startsWith('image/');
-      const split = document.createElement('div'); split.className='hex-split';
-      split.innerHTML=`<div class="hex-left" id="hxl-${i}">
-        <div class="hex-left-label">render output</div>
-        <div class="hex-left-waiting" id="hxl-wait-${i}">// no data</div>
-      </div>
-      <div class="hex-right">
-        <div class="hex-right-bar">
-          <div class="hrb-dot r"></div><div class="hrb-dot y"></div><div class="hrb-dot g"></div>
-          <div class="hrb-label">${c.address.slice(0,10)}… · hex dump</div>
-        </div>
-        <div class="hex-right-out" id="hxr-${i}"></div>
-      </div>`;
-      content.appendChild(split);
-      const timer4=makeTimer(split,`v4-${i}`);
-
-      const leftEl=document.getElementById(`hxl-${i}`);
-      const waitEl=document.getElementById(`hxl-wait-${i}`);
-      const rightOut=document.getElementById(`hxr-${i}`);
-
-      let renderCanvas=null, renderCtx=null, canvasW=0, canvasH=0;
-      if (isImg) {
-        const lW=leftEl.clientWidth||200, lH=leftEl.clientHeight||240;
-        const sz=Math.min(lW-16,lH-24,180); canvasW=sz; canvasH=sz;
-        renderCanvas=document.createElement('canvas'); renderCanvas.width=sz; renderCanvas.height=sz;
-        renderCtx=renderCanvas.getContext('2d');
-        noiseCanvas(renderCanvas,sz,sz); waitEl.remove(); leftEl.appendChild(renderCanvas);
-      }
-
+    async function retrieveV2(i,c,content,actions,track){
+      const box=document.createElement('div'); box.className='logbox';
+      box.innerHTML=`<div class="logbox-bar"><b>RPC session</b><span>${c.address.slice(0,10)}…</span></div><div class="logbox-out" id="lout-${i}"></div>`;
+      content.appendChild(box);
+      const out=document.getElementById(`lout-${i}`);
+      const timer=makeTimer(content,`v2-${i}`);
+      const delay=ms=>new Promise(r=>setTimeout(r,ms));
+      llLine(out,`<span class="lk">transport</span>  <span class="lv">${CONFIG.RPC_URL.replace('https://','')}</span>`); await delay(120);
+      llLine(out,`<span class="lk">eth_chainId</span>  <span class="lc">→</span> <span class="lv">0xaa36a7</span> <span class="lc">Sepolia</span>`); llGap(out);
       const ordered=await buildOrderedAddresses(c.address,c.totalParts,c.currentPart);
-      const chunkCounts=[]; let totalChunks=0;
-      for (const addr of ordered) {
-        const dc=new web3.eth.Contract(DATA_ABI,addr);
-        const cnt=Number(await dc.methods.getDataCount().call());
-        chunkCounts.push(cnt); totalChunks+=cnt;
-      }
-
-      let offset=0, received=0, totalBytes=0, allHex='', hexLineCount=0;
-      for (let p=0; p<ordered.length; p++) {
+      llLine(out,`<span class="lk">getMetadata</span>  <span class="lv">${c.address}</span>`); await delay(80);
+      llLine(out,`<span class="lc">←</span> <span class="lc">mime</span> <span class="lv">${esc(c.mimeType)}</span>  <span class="lc">parts</span> <span class="lv">${c.totalParts}</span>`); llGap(out);
+      const counts=[]; let total=0;
+      for(const a of ordered){ const n=Number(await new web3.eth.Contract(DATA_ABI,a).methods.getDataCount().call()); counts.push(n); total+=n; llLine(out,`<span class="lk">getDataCount</span>  <span class="lv">${a.slice(0,10)}…</span> <span class="lc">→</span> <span class="lv">${n}</span>`); await delay(60); }
+      llGap(out); llPlain(out,`<span class="ldim">fetching ${total} chunk${total!==1?'s':''} across ${ordered.length} contract${ordered.length!==1?'s':''}</span>`); llGap(out);
+      let off=0, bytes=0, got=0, hex='';
+      for(let p=0;p<ordered.length;p++){
         const dc=new web3.eth.Contract(DATA_ABI,ordered[p]);
-        for (let j=0; j<chunkCounts[p]; j++) {
-          const raw=await dc.methods.getData(j).call();
-          const hex=raw.replace(/^0x/,''); allHex+=hex;
-          const bytes=hexToBytes(hex); totalBytes+=bytes.length; received++;
-          for (let k=0; k<bytes.length; k+=16) {
-            const sl=bytes.slice(k,k+16);
-            rightOut.insertAdjacentHTML('beforeend', hrFormatLine(offset+k,sl,j===0&&k===0));
-            hexLineCount++;
-            if(hexLineCount>60) rightOut.removeChild(rightOut.firstChild);
-          }
-          rightOut.scrollTop=rightOut.scrollHeight;
-          offset+=bytes.length;
-          if (isImg&&renderCanvas) {
-            const rowEnd=Math.ceil(canvasH*received/totalChunks);
-            const rowStart=Math.ceil(canvasH*(received-1)/totalChunks);
-            for(let row=rowStart; row<rowEnd&&row<canvasH; row++){
-              const px=renderCtx.createImageData(canvasW,1);
-              for(let q=0;q<px.data.length;q+=4){const v=Math.floor(Math.random()*8); px.data[q]=v; px.data[q+1]=Math.floor(v*1.6); px.data[q+2]=v; px.data[q+3]=255;}
-              renderCtx.putImageData(px,0,row);
-            }
-          } else if (!isImg) {
-            const decoded=new TextDecoder().decode(hexToBytes(allHex));
-            const partial=decoded.slice(0,Math.floor(decoded.length*received/totalChunks));
-            if(!leftEl.querySelector('.hex-left-text')){waitEl&&waitEl.remove(); const td=document.createElement('div'); td.className='hex-left-text'; td.id=`hxlt-${i}`; leftEl.appendChild(td);}
-            const td=document.getElementById(`hxlt-${i}`); if(td) td.textContent=partial.slice(-600);
-          }
-          progress.style.width=`${(received/totalChunks)*92}%`;
+        if(ordered.length>1){ llPlain(out,`<span class="ldim">contract ${p+1} of ${ordered.length}: ${ordered[p]}</span>`); llGap(out); }
+        for(let j=0;j<counts[p];j++){
+          const t1=Date.now(); const raw=await dc.methods.getData(j).call(); const lat=Date.now()-t1;
+          const h=raw.replace(/^0x/,''); hex+=h; const b=hexToBytes(h); bytes+=b.length; got++;
+          llLine(out,`<span class="lc">chunk[${String(j).padStart(2,'0')}]</span> ${llHex(off,b.slice(0,16))} <span class="lc">${b.length}B ${lat}ms</span>`);
+          if(b.length>16){ const ex=b.slice(16,32); if(ex.length) llLine(out,`<span class="lc">          </span>${llHex(off+16,ex)}`); if(b.length>32) llPlain(out,`<span class="ldim">          ${b.length-32} more bytes</span>`); }
+          off+=b.length; track.style.width=`${(got/total)*90}%`;
         }
       }
-
-      const finalBytes=hexToBytes(allHex);
-      if (isImg&&renderCanvas) {
-        const url=URL.createObjectURL(new Blob([finalBytes],{type:c.mimeType}));
-        const img=new Image(); img.onload=()=>{renderCtx.drawImage(img,0,0,canvasW,canvasH); URL.revokeObjectURL(url);}; img.src=url;
-      } else {
-        const td=document.getElementById(`hxlt-${i}`); if(td) td.textContent=new TextDecoder().decode(finalBytes);
-      }
-      rightOut.insertAdjacentHTML('beforeend', `<div style="padding:4px 0;color:#46b452;font-size:0.85rem;">// decode complete · ${totalBytes.toLocaleString()} B · ${received} chunks</div>`);
-      rightOut.scrollTop=rightOut.scrollHeight;
-      progress.style.width='100%';
-      timer4.stop();
-      return allHex;
+      llGap(out); llLine(out,`<span class="lok">Complete</span>  <span class="lc">${bytes.toLocaleString()} B · ${got} chunk${got!==1?'s':''} · ${timer.elapsed()}ms</span>`);
+      track.style.width='100%'; timer.stop();
+      return hex;
     }
 
-    /* ── Main dispatcher ── */
-    async function handleRetrieve(i) {
-      const c        = contracts[i];
-      const btn      = document.getElementById(`btn-${i}`);
-      const viewer   = document.getElementById(`viewer-${i}`);
-      const content  = document.getElementById(`content-${i}`);
-      const actions  = document.getElementById(`actions-${i}`);
-      const progress = document.getElementById(`progress-${i}`);
-      const status   = document.getElementById(`status-${i}`);
-
-      if (viewer.classList.contains('open')) {
-        viewer.classList.remove('open');
-        content.innerHTML=''; actions.innerHTML=''; actions.style.display='none';
-        status.textContent=''; progress.style.width='0%';
-        btn.textContent='▶\u00a0Retrieve'; return;
+    function hrLine(addr,bytes,first){
+      const a='0x'+addr.toString(16).padStart(8,'0');
+      const parts=[]; for(let k=0;k<bytes.length;k++){ const bh=bytes[k].toString(16).padStart(2,'0'); parts.push(first&&k<8?`<span class="hr-hi">${bh}</span>`:`<span class="hr-b">${bh}</span>`); if(k===7) parts.push(' '); }
+      const ascii=Array.from(bytes).map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
+      return `<div class="hrl"><span class="hr-a">${a}</span>  ${parts.join(' ')} <span class="hr-s">|</span><span class="hr-x">${esc(ascii)}</span><span class="hr-s">|</span></div>`;
+    }
+    function noiseRows(ctx,w,r0,r1){
+      for(let row=r0;row<r1;row++){ const px=ctx.createImageData(w,1); for(let q=0;q<px.data.length;q+=4){ const v=24+Math.floor(Math.random()*26); px.data[q]=v; px.data[q+1]=v; px.data[q+2]=v+2; px.data[q+3]=255; } ctx.putImageData(px,0,row); }
+    }
+    async function retrieveV4(i,c,content,actions,track){
+      const isImg=c.mimeType.startsWith('image/');
+      const box=document.createElement('div'); box.className='bytes';
+      box.innerHTML=`<div class="bytes-l" id="bl-${i}"><div class="bytes-cap">Output</div><div class="bytes-wait" id="bw-${i}">Waiting for data</div></div>
+        <div class="bytes-r"><div class="bytes-bar">${c.address.slice(0,10)}… hex stream</div><div class="bytes-out" id="br-${i}"></div></div>`;
+      content.appendChild(box);
+      const tw=document.createElement('div'); content.appendChild(tw);
+      const timer=makeTimer(tw,`v4-${i}`);
+      const leftEl=document.getElementById(`bl-${i}`), waitEl=document.getElementById(`bw-${i}`), rightOut=document.getElementById(`br-${i}`);
+      let canvas=null, ctx=null, cw=0, ch=0;
+      if(isImg){
+        const sz=Math.min((leftEl.clientWidth||220)-24,(leftEl.clientHeight||260)-48,240);
+        cw=ch=sz; canvas=document.createElement('canvas'); canvas.width=sz; canvas.height=sz; ctx=canvas.getContext('2d');
+        ctx.fillStyle='#1d1d1f'; ctx.fillRect(0,0,sz,sz); waitEl.remove(); leftEl.appendChild(canvas);
       }
+      const ordered=await buildOrderedAddresses(c.address,c.totalParts,c.currentPart);
+      const counts=[]; let total=0;
+      for(const a of ordered){ const n=Number(await new web3.eth.Contract(DATA_ABI,a).methods.getDataCount().call()); counts.push(n); total+=n; }
+      let off=0, got=0, bytes=0, hex='', lines=0;
+      for(let p=0;p<ordered.length;p++){
+        const dc=new web3.eth.Contract(DATA_ABI,ordered[p]);
+        for(let j=0;j<counts[p];j++){
+          const h=(await dc.methods.getData(j).call()).replace(/^0x/,''); hex+=h; const b=hexToBytes(h); bytes+=b.length; got++;
+          for(let k=0;k<b.length;k+=16){ rightOut.insertAdjacentHTML('beforeend',hrLine(off+k,b.slice(k,k+16),j===0&&k===0)); lines++; if(lines>60) rightOut.removeChild(rightOut.firstChild); }
+          rightOut.scrollTop=rightOut.scrollHeight; off+=b.length;
+          if(isImg&&canvas) noiseRows(ctx,cw,Math.ceil(ch*(got-1)/total),Math.min(ch,Math.ceil(ch*got/total)));
+          else if(!isImg){
+            const dec=new TextDecoder().decode(hexToBytes(hex));
+            if(!document.getElementById(`blt-${i}`)){ waitEl&&waitEl.remove(); const td=document.createElement('div'); td.className='bytes-txt'; td.id=`blt-${i}`; leftEl.appendChild(td); }
+            document.getElementById(`blt-${i}`).textContent=dec.slice(0,Math.floor(dec.length*got/total)).slice(-600);
+          }
+          track.style.width=`${(got/total)*92}%`;
+        }
+      }
+      const fin=hexToBytes(hex);
+      if(isImg&&canvas){ const url=URL.createObjectURL(new Blob([fin],{type:c.mimeType})); const img=new Image(); img.onload=()=>{ ctx.clearRect(0,0,cw,ch); ctx.drawImage(img,0,0,cw,ch); URL.revokeObjectURL(url); }; img.src=url; }
+      else { const td=document.getElementById(`blt-${i}`); if(td) td.textContent=new TextDecoder().decode(fin); }
+      rightOut.insertAdjacentHTML('beforeend',`<div style="padding-top:6px;color:var(--ok)">Decoded · ${bytes.toLocaleString()} B · ${got} chunk${got!==1?'s':''}</div>`);
+      rightOut.scrollTop=rightOut.scrollHeight; track.style.width='100%'; timer.stop();
+      return hex;
+    }
 
-      btn.disabled=true; btn.textContent='Retrieving…';
-      viewer.classList.add('open'); content.innerHTML=''; actions.style.display='none';
-      progress.style.width='0%'; status.textContent='';
+    async function handleRetrieve(i){
+      const c=contracts[i];
+      const btn=document.getElementById(`btn-${i}`), viewer=document.getElementById(`viewer-${i}`), card=document.getElementById(`rec-${i}`);
+      const content=document.getElementById(`content-${i}`), actions=document.getElementById(`actions-${i}`);
+      const track=document.getElementById(`track-${i}`), status=document.getElementById(`status-${i}`);
+      if(viewer.classList.contains('open')){ closeViewer(i); return; }
+      const run=runs[i]=(runs[i]||0)+1;
+
+      setBtn(btn,'busy');
+      card.classList.add('wide');
+      viewer.classList.add('open'); content.innerHTML=''; actions.style.display='none'; track.style.width='0%'; status.textContent='';
+      card.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'nearest' });
 
       try {
-        let allHex;
-
-        if (pipelineMode === 1) {
-          allHex = await retrieveV1(i, c, content, actions, progress);
-        } else if (pipelineMode === 2) {
-          allHex = await retrieveV2(i, c, content, actions, progress);
-        } else if (pipelineMode === 4) {
-          allHex = await retrieveV4(i, c, content, actions, progress);
-        } else {
-          const timerWrap = document.createElement('div');
-          timerWrap.style.cssText = 'margin-bottom:8px;';
-          content.appendChild(timerWrap);
-          const timer0 = makeTimer(timerWrap, `v0-${i}`);
-          status.textContent = c.totalParts > 1 ? `Resolving ${c.totalParts}-part content…` : 'Fetching…';
-          const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart);
-          allHex = '';
-          for (let p=0; p<ordered.length; p++) {
-            status.textContent=`Contract ${p+1} / ${ordered.length}…`;
-            allHex += await fetchContractData(ordered[p]);
-            progress.style.width=`${((p+1)/ordered.length)*100}%`;
-          }
-          status.textContent='';
-          progress.style.width='100%';
-          timer0.stop();
+        let hex;
+        const tk={ style:{ set width(v){ if(runs[i]===run) track.style.width=v; } } };
+        if(pipelineMode===1) hex=await retrieveV1(i,c,content,actions,tk);
+        else if(pipelineMode===2) hex=await retrieveV2(i,c,content,actions,tk);
+        else if(pipelineMode===4) hex=await retrieveV4(i,c,content,actions,tk);
+        else {
+          const tw=document.createElement('div'); tw.style.marginBottom='14px'; content.appendChild(tw);
+          const t0=makeTimer(tw,`v0-${i}`);
+          status.textContent=c.totalParts>1?`Resolving ${c.totalParts}-part payload…`:'Fetching…';
+          const ordered=await buildOrderedAddresses(c.address,c.totalParts,c.currentPart);
+          hex='';
+          for(let p=0;p<ordered.length;p++){ if(runs[i]!==run) break; status.textContent=`Contract ${p+1} of ${ordered.length}…`; hex+=await fetchContractData(ordered[p]); if(runs[i]===run) track.style.width=`${((p+1)/ordered.length)*100}%`; }
+          if(runs[i]!==run){ t0.stop(); return; }
+          status.textContent=''; track.style.width='100%'; t0.stop();
         }
+        if(runs[i]!==run) return;
 
-        const bytes = hexToBytes(allHex);
+        const bytes=hexToBytes(hex);
+        const ordered=await buildOrderedAddresses(c.address,c.totalParts,c.currentPart).catch(()=>[c.address]);
+        let chunks=0;
+        for(const a of ordered){ try { chunks+=Number(await new web3.eth.Contract(DATA_ABI,a).methods.getDataCount().call()); } catch(e){ chunks+=1; } }
+        if(runs[i]!==run) return;
 
-        const ordered = await buildOrderedAddresses(c.address, c.totalParts, c.currentPart).catch(() => [c.address]);
-        let realChunkCount = 0;
-        for (const addr of ordered) {
-          try {
-            const dc = new web3.eth.Contract(DATA_ABI, addr);
-            realChunkCount += Number(await dc.methods.getDataCount().call());
-          } catch(e) { realChunkCount += 1; }
-        }
+        const renderEl=document.createElement('div'); renderEl.style.marginBottom='12px';
+        content.appendChild(renderEl);
+        renderContent(renderEl,actions,bytes,c.mimeType,c.description);
 
-        if (ordered.length > 1) {
-          const chainViz = buildContractChain(ordered, c.currentPart);
-          if (chainViz) content.appendChild(chainViz);
-        }
+        if(ordered.length>1){ const cv=buildContractChain(ordered,c.currentPart); if(cv) content.appendChild(cv); }
+        const diag=document.createElement('div'); diag.className='panel';
+        diag.innerHTML=`<div class="panel-cap">Where this payload lives in Ethereum state</div>`+buildTrieSVG(c.address);
+        content.appendChild(diag);
+        const info=await buildInfoPanel(c.address,bytes,c.mimeType,chunks);
+        if(runs[i]!==run) return;
+        content.appendChild(info);
 
-        const trieWrap = document.createElement('div');
-        trieWrap.className = 'trie-diagram';
-        trieWrap.innerHTML = `<div class="trie-title">Ethereum State Trie — Data Location</div>` + buildTrieSVG(c.address);
-        content.appendChild(trieWrap);
-
-        const infoPanel = await buildInfoPanel(c.address, bytes, c.mimeType, realChunkCount);
-        content.appendChild(infoPanel);
-
-        const renderEl = (pipelineMode === 0) ? content : document.createElement('div');
-        if (pipelineMode !== 0) content.appendChild(renderEl);
-        renderContent(renderEl, actions, bytes, c.mimeType, c.description);
-
-        btn.textContent='▲\u00a0Close'; btn.disabled=false;
-
-      } catch(err) {
-        content.innerHTML+=`<div class="error-box">Retrieval error: ${esc(err.message)}</div>`;
-        status.textContent=''; btn.textContent='▶\u00a0Retrieve'; btn.disabled=false;
+        setBtn(btn,'open');
+      } catch(err){
+        if(runs[i]!==run) return;
+        content.insertAdjacentHTML('beforeend',`<div class="err">Retrieval error: ${esc(err.message)}</div>`);
+        status.textContent=''; setBtn(btn,'idle');
       }
     }
 
-    function extractYouTubeId(url) {
-      const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/,
-      ];
-      for (const p of patterns) {
-        const m = url.match(p);
-        if (m) return m[1];
-      }
-      return null;
-    }
+    function extractYouTubeId(url){ const m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([\w-]{11})/); return m?m[1]:null; }
+    function isURL(t){ return /^https?:\/\//i.test(t.trim()); }
 
-    function isURL(text) {
-      return /^https?:\/\//i.test(text.trim());
-    }
-
-    function renderContent(contentEl, actionsEl, bytes, mimeType, filename) {
-      if (isImage(mimeType)) {
-        const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-        const img = document.createElement('img');
-        img.className = 'content-image';
-        img.src = url;
-        img.alt = filename;
-        contentEl.appendChild(img);
-
+    function renderContent(el,actionsEl,bytes,mimeType,filename){
+      const badge=el.closest('.record')?.querySelector('.rec-type');
+      if(isImage(mimeType)){
+        const img=document.createElement('img'); img.className='content-image'; img.src=URL.createObjectURL(new Blob([bytes],{type:mimeType})); img.alt=filename; el.appendChild(img);
       } else {
-        const text = new TextDecoder().decode(bytes).trim();
-
-        if (isURL(text)) {
-          const ytId = extractYouTubeId(text);
-
-          if (ytId) {
-            const iframe = document.createElement('iframe');
-            iframe.className = 'content-iframe';
-            iframe.src = `https://www.youtube.com/embed/${ytId}`;
-            iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
-            iframe.allowFullscreen = true;
-            iframe.title = filename;
-            contentEl.appendChild(iframe);
-            const badge = contentEl.closest('.contract-card')?.querySelector('.mime-badge');
-            if (badge) { badge.textContent = 'VIDEO'; badge.className = 'mime-badge mime-image'; }
+        const text=new TextDecoder().decode(bytes).trim();
+        if(isURL(text)){
+          const yt=extractYouTubeId(text);
+          if(yt){
+            const f=document.createElement('iframe'); f.className='content-iframe'; f.src=`https://www.youtube.com/embed/${yt}`;
+            f.allow='accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'; f.allowFullscreen=true; f.title=filename;
+            el.appendChild(f); if(badge) badge.textContent='VIDEO';
           } else {
-            const wrap = document.createElement('div');
-
-            const iframe = document.createElement('iframe');
-            iframe.className = 'content-iframe';
-            iframe.src = text;
-            iframe.title = filename;
-            iframe.sandbox = 'allow-scripts allow-same-origin allow-forms allow-popups';
-            iframe.referrerPolicy = 'no-referrer';
-
-            const notice = document.createElement('div');
-            notice.className = 'iframe-blocked-notice';
-            notice.innerHTML = `⚠ THIS SITE BLOCKED IFRAME EMBEDDING &nbsp;·&nbsp; <a href="${esc(text)}" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">OPEN IN NEW TAB ↗</a>`;
-
-            const link = document.createElement('a');
-            link.className = 'content-link';
-            link.href = text;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            link.textContent = '↗ ' + text;
-
-            let loaded = false;
-            iframe.addEventListener('load', () => {
-              loaded = true;
-              try {
-                const doc = iframe.contentDocument || iframe.contentWindow?.document;
-                if (!doc || doc.body === null || doc.body.innerHTML === '') {
-                  iframe.style.display = 'none';
-                  notice.style.display = 'block';
-                }
-              } catch(e) {}
-            });
-
-            setTimeout(() => {
-              if (!loaded) {
-                iframe.style.display = 'none';
-                notice.style.display = 'block';
-              }
-            }, 5000);
-
-            wrap.appendChild(iframe);
-            wrap.appendChild(notice);
-            wrap.appendChild(link);
-            contentEl.appendChild(wrap);
-
-            const badge = contentEl.closest('.contract-card')?.querySelector('.mime-badge');
-            if (badge) { badge.textContent = 'WEB'; badge.className = 'mime-badge mime-image'; }
+            const f=document.createElement('iframe'); f.className='content-iframe'; f.src=text; f.title=filename;
+            f.sandbox='allow-scripts allow-same-origin allow-forms allow-popups'; f.referrerPolicy='no-referrer';
+            const note=document.createElement('div'); note.className='iframe-blocked';
+            note.innerHTML=`This site doesn't allow embedding. <a href="${esc(text)}" target="_blank" rel="noopener noreferrer">Open in a new tab ↗</a>`;
+            const link=document.createElement('a'); link.className='content-link'; link.href=text; link.target='_blank'; link.rel='noopener noreferrer'; link.textContent=text+' ↗';
+            let loaded=false;
+            f.addEventListener('load',()=>{ loaded=true; try { const d=f.contentDocument||f.contentWindow?.document; if(!d||d.body===null||d.body.innerHTML===''){ f.style.display='none'; note.style.display='block'; } } catch(e){} });
+            setTimeout(()=>{ if(!loaded){ f.style.display='none'; note.style.display='block'; } },5000);
+            el.appendChild(f); el.appendChild(note); el.appendChild(link);
+            if(badge) badge.textContent='WEB';
           }
         } else {
-          const pre = document.createElement('pre');
-          pre.className = 'content-text';
-          pre.textContent = text;
-          contentEl.appendChild(pre);
+          const pre=document.createElement('pre'); pre.className='content-text'; pre.textContent=text; el.appendChild(pre);
         }
       }
-
-      buildActions(actionsEl, bytes, mimeType, filename);
+      buildActions(actionsEl,bytes,mimeType,filename);
     }
 
-    function buildActions(actionsEl, bytes, mimeType, filename) {
-      const { ext } = mimeMeta(mimeType);
-      const dlName  = safeName(filename) + '.' + ext;
-
-      const dlBtn   = document.createElement('button');
-      dlBtn.className = 'action-btn';
-      dlBtn.textContent = '↓ Download';
-      dlBtn.addEventListener('click', () => {
-        const url = URL.createObjectURL(new Blob([bytes], { type: mimeType }));
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = dlName;
-        a.click();
-        URL.revokeObjectURL(url);
-      });
-
-      actionsEl.innerHTML = '';
-      actionsEl.appendChild(dlBtn);
-
-      if (!isImage(mimeType)) {
-        const cpBtn = document.createElement('button');
-        cpBtn.className = 'action-btn';
-        cpBtn.textContent = '⎘ Copy';
-        cpBtn.addEventListener('click', async () => {
-          await navigator.clipboard.writeText(new TextDecoder().decode(bytes));
-          cpBtn.textContent = '✓ Copied';
-          setTimeout(() => { cpBtn.textContent = '⎘ Copy'; }, 1800);
-        });
-        actionsEl.appendChild(cpBtn);
+    function buildActions(actionsEl,bytes,mimeType,filename){
+      const dlName=safeName(filename)+'.'+mimeMeta(mimeType).ext;
+      const dl=document.createElement('button'); dl.className='act'; dl.textContent='Download';
+      dl.addEventListener('click',()=>{ const url=URL.createObjectURL(new Blob([bytes],{type:mimeType})); const a=document.createElement('a'); a.href=url; a.download=dlName; a.click(); URL.revokeObjectURL(url); });
+      actionsEl.innerHTML=''; actionsEl.appendChild(dl);
+      if(!isImage(mimeType)){
+        const cp=document.createElement('button'); cp.className='act'; cp.textContent='Copy text';
+        cp.addEventListener('click',async()=>{ await navigator.clipboard.writeText(new TextDecoder().decode(bytes)); cp.textContent='Copied'; setTimeout(()=>{ cp.textContent='Copy text'; },1800); });
+        actionsEl.appendChild(cp);
       }
-
-      const sizeEl = document.createElement('span');
-      sizeEl.className = 'size-label';
-      sizeEl.textContent = formatBytes(bytes.length);
-      actionsEl.appendChild(sizeEl);
-
-      actionsEl.style.display = 'flex';
+      const s=document.createElement('span'); s.className='act-size'; s.textContent=formatBytes(bytes.length); actionsEl.appendChild(s);
+      actionsEl.style.display='flex';
     }
 
-    function showGridError(msg) {
-      document.getElementById('contracts-grid').innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-title" style="color:var(--red)">Connection Error</div>
-          <div class="empty-state-desc">${esc(msg)}</div>
-        </div>`;
-      const s = document.getElementById('stat-count');
-      s.textContent = 'ERR';
-      s.style.color = 'var(--red)';
-      s.classList.remove('pending');
+    function showGridError(msg){
+      document.getElementById('records-grid').innerHTML=`<div class="empty"><h3>Can't reach the network</h3><p>${esc(msg)}</p></div>`;
+      const k=document.getElementById('k-records'); k.textContent='—';
+      document.getElementById('sec-count').textContent='Offline';
     }
 
     applyMode(pipelineMode);
